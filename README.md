@@ -14,3 +14,6 @@ A set of programs for computing and displaying various ephemeris times for today
 
 The programs were written in 1985, by Keith E. Brandt, John Dilley, Robert Bond, Martin Minow.  
 Published in 2003 (?) at http://www.linuxha.com/athome/common/today.tgz.
+
+Updated in 2009 by Neil Cherry <ncherry@linuxha.com> to work better with the more intelligent C compilers of that time.  
+The updated version was published at http://www.linuxha.com/athome/common/today-20091222.tgz

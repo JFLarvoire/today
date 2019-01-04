@@ -38,6 +38,9 @@
 #include <sys/types.h>
 #include <time.h>
 
+// njc
+#include <stdlib.h>
+
 #ifndef PI
 #define PI       3.141592654
 #endif

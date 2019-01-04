@@ -11,6 +11,9 @@
 
  ****************************************************************************/
 
+#include <stdlib.h>
+#include <string.h>
+
 # include	"moontx.h"
 
 double dtor();

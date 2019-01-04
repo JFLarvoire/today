@@ -35,4 +35,4 @@ install:	all
 	rm -f ,* *.o ERRS core a.out
 
 clean:
-	rm -f ${BIN} a.out core ERRS ,* *.o
+	rm -f ${BIN} a.out core ERRS ,* *.o *~ core foo

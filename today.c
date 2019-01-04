@@ -61,7 +61,8 @@ bugs
 
 #endif
 
-#define	APRIL_FOOLS
+//#define	APRIL_FOOLS
+#undef	APRIL_FOOLS
 
 int	__narg	=	1;		/* No prompt if no args		*/
 #define LINEWIDTH       72              /* Width of line                */
@@ -69,6 +70,8 @@ int	__narg	=	1;		/* No prompt if no args		*/
 #include <stdio.h>
 #include <time.h>
 #include <ctype.h>
+#include <string.h>
+
 #undef NULL
 
 #define	NULL		0
@@ -117,8 +120,8 @@ char    *argv[];
  */
 
 {
-  ccpos = 0;                      /* New line now                 */
-  wordptr = wordbuffer;           /* Nothing buffered             */
+  ccpos = 0;			/* New line now                 */
+  wordptr = wordbuffer;		/* Nothing buffered             */
   lineptr = linebuffer;		/* Nothing in output buffer too	*/
   polish = 0;			/* Normal mode			*/
   if (argc > 1 && tolower(argv[1][0]) == 'p') {
@@ -330,14 +333,31 @@ register char	c;
   *lineptr++ = c;
 } 
 
-getline()
 /*
  * Read text to global line[].  Return 1 on end of file, zero on ok.
  */
-{
-  register char *t;
+getline() {
+  char *t;
+#ifdef NJC
+  char *p;
 
+  // slightly safer handling of gets
+  // '\n' line is not an empty line
+  // EOF should be an empty line
+  if(fgets(line, sizeof(line), stdin) == NULL) {
+    return(1);
+  }
+
+  if((p = strchr(line, '\n')) != NULL) {
+    *p = '\0';
+  }
+
+  return(0);
+  // was
+  // return(fgets(line, sizeof(line), stdin) == NULL);
+#else  // old and unsafe
   return (gets(line) == NULL);
+#endif
 }
 
 getval(flag, low, high)

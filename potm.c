@@ -10,6 +10,8 @@
 **
 */
 
+#include <stdio.h>
+
 static	char	potm[64];
 
 main()

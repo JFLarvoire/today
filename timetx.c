@@ -123,7 +123,8 @@ int     daylight;                       /* Non-zero if savings time     */
 	return(op);
 }
 
-static char *
+//static char *
+char *
 stuff(buffer, value, flag, leading, trailing)
 char    *buffer;                        /* Output goes here             */
 int     value;                          /* The value to print if > 0    */
