@@ -1,0 +1,39 @@
+##
+#	NMakefile for building today tools for Windows using Microsoft development tools
+#
+# Authors:
+# JFL jf.larvoire@free.fr
+#
+# Changes:
+# 2018-12-26 JFL Output files into the bin/$(uname -s).$(uname -p)[/Debug] subdirectory.
+#
+
+default: all
+
+# Override the default help definition in All.mak below.
+help: real-help
+	rem
+
+# CFLAGS = $(CFLAGS) /D_CRT_SECURE_NO_WARNINGS
+# Kludge using the HAS_SDK_FLAGS variable intended for use with external SDKs
+HAS_SDK_FLAGS = $(HAS_SDK_FLAGS) /D_CRT_SECURE_NO_WARNINGS
+
+!INCLUDE <All.mak>
+
+real-help:
+    type <<
+Usage: make.bat [options] [nmake_options] [macro_definitions] [targets] ...
+
+Macro definitions:     (They must be quoted, else the = sign will be lost)
+  "DEBUG=1"            Generate the debug version. <==> Target in a Debug\ dir.
+  "OS=DOS WIN95 WIN32 WIN64"   List of target OSs to build for
+
+Targets:
+  all           Build all available sources (default)
+  clean         Erase all output files
+  potm.exe      Build $(OD)$$(OS)[\Debug]\potm.exe
+  today.exe     Build $(OD)$$(OS)[\Debug]\today.exe
+  sunrise.exe   Build $(OD)$$(OS)[\Debug]\sunrise.exe
+  sunset.exe    Build $(OD)$$(OS)[\Debug]\sunset.exe
+  zip           Generate a $(OD)today.zip source release
+<<

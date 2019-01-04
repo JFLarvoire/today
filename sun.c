@@ -37,9 +37,10 @@
 #include <math.h>
 #include <sys/types.h>
 #include <time.h>
-
-// njc
 #include <stdlib.h>
+
+#include "params.h"
+#include "today.h"
 
 #ifndef PI
 #define PI       3.141592654
@@ -48,22 +49,28 @@
 #define EPOCH	 1980
 #define JDE	 2444238.5	/* Julian date of EPOCH */
 
-double dtor();
-static double adj360();
-double adj24();
-double julian_date();
-double hms_to_dh();
-double solar_lon();
-double acos_deg();
-double asin_deg();
-double atan_q_deg();
-double atan_deg();
-double sin_deg();
-double cos_deg();
-double tan_deg();
-double gmst();
+/* Forward references to local routines */
+/* void sun(int *sunrh, int *sunrm, int *sunsh, int *sunsm); // Defined in today.h */
+double rtod(double deg);
+double adj360(double deg);
+double adj24(double hrs);
+double julian_date(int m, int d, int y);
+double hms_to_dh(int h, int m, int s);
+double solar_lon(double ed);
+double acos_deg(double x);
+double asin_deg(double x);
+double atan_q_deg(double y, double x);
+double atan_deg(double x);
+double sin_deg(double x);
+double cos_deg(double x);
+double tan_deg(double x);
+void lon_to_eq(double lambda, double *alpha, double *delta);
+void rise_set(double alpha, double delta, double *lstr, double *lsts, double *ar, double *as);
+void lst_to_hm(double lst, double jd, int *h, int *m);
+void dh_to_hm(double dh, int *h, int *m);
+void eq_to_altaz(double r, double d, double t, double *alt, double *az);
+double gmst(double j, double f);
 
-long time();
 struct tm *localtime();
 
 int th;
@@ -73,30 +80,17 @@ int mo;
 int day;
 int yr;
 
-#ifndef NJC
-int tz=8;			/* Default time zone */
+int tz = TZ;			/* Default time zone */
+char *tzs  = TZS;		/* Default time zone string */
+char *dtzs = DTZS;		/* Default daylight savings time string */
 
-char *tzs  = "(PST)";		/* Default time zone string */
-char *dtzs = "(PDT)";		/* Default daylight savings time string */
-#else
-int tz=5;
-
-char *tzs  = "(EST)";		/* Default time zone string */
-char *dtzs = "(EDT)";		/* Default daylight savings time string */
-#endif
+double lat = LAT;		/* Default latitude */
+double lon = LON;		/* Default Longitude */ 
 
 int debug = 0;
 int popt = 0;
 
-#ifndef NJC
-double lat =  35.0000;		/* Default latitude (Fort Collins, Colorado) */
-double lon = 118.0000;		/* Default Longitude (Degrees west) */ 
-#else
-double lat = 40.4;		/* Default latitude (Spotswood, NJ) */
-double lon = 74.4;		/* Default Longitude (Degrees west) */ 
-#endif
-
-sun(sunrh, sunrm, sunsh, sunsm)
+void sun(sunrh, sunrm, sunsh, sunsm)
 int *sunrh, *sunrm, *sunsh, *sunsm;
 {
     double ed, jd;
@@ -249,6 +243,12 @@ int *sunrh, *sunrm, *sunsh, *sunsm;
     }
 }
 
+#if defined(_MSC_VER) && (_MSC_VER < 1400)
+/* The MSVC 1.5 register optimizer chokes on the routine below!
+   Microsoft docs report a similar bug for VS 2003 = _MSC_VER 1310 */
+#pragma optimize("e", off)
+#endif
+
 double
 rtod(deg)
 double deg;
@@ -399,7 +399,7 @@ double x;
     return tan(dtor(x));
 }
 
-lon_to_eq(lambda, alpha, delta)
+void lon_to_eq(lambda, alpha, delta)
 double lambda;
 double *alpha;
 double *delta;
@@ -416,7 +416,7 @@ double *delta;
 	    lambda, *alpha, *delta);
 }
 
-rise_set(alpha, delta, lstr, lsts, ar, as)
+void rise_set(alpha, delta, lstr, lsts, ar, as)
 double alpha, delta, *lstr, *lsts, *ar, *as;
 {
     double tar;
@@ -445,7 +445,7 @@ double alpha, delta, *lstr, *lsts, *ar, *as;
     }
 }
 
-lst_to_hm(lst, jd, h, m)
+void lst_to_hm(lst, jd, h, m)
 double lst, jd;
 int *h, *m;
 {
@@ -471,16 +471,16 @@ int *h, *m;
     dh_to_hm(gmt, h, m);
 }
 
-dh_to_hm(dh, h, m)
+void dh_to_hm(dh, h, m)
 double dh;
 int *h, *m;
 {
     double tempsec;
 
-    *h = dh;
+    *h = (int)dh;
  /* *m = (dh - *h) * 60; 
     tempsec = (dh - *h) * 60 - *m; */
-    *m = fmod(dh, 1.0) * 60.0; 
+    *m = (int)(fmod(dh, 1.0) * 60.0); 
     tempsec = fmod(dh, 1.0) * 60.0 - *m;
     tempsec = tempsec * 60 + 0.5;
     if (tempsec > 30.0)
@@ -491,7 +491,7 @@ int *h, *m;
     }
 }
 
-eq_to_altaz(r, d, t, alt, az)
+void eq_to_altaz(r, d, t, alt, az)
 double r, d, t;
 double *alt, *az;
 {
@@ -562,3 +562,4 @@ double j,f;
 
     return(s);
 }
+

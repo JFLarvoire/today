@@ -36,8 +36,11 @@
  *
  */
 
-extern char     *nbrtxt();
-extern char     *copyst();
+#include "today.h"
+
+/* Forward references to local routines */
+/* char *nbrtxt(char *buffer, int datum, int ordflag); // Defined in today.h */
+/* char *copyst(char *buffer, char *string); // Defined in today.h */
 
 static char *cardinal[] = {
 	"zero",
@@ -150,6 +153,10 @@ exit:   if (ordflag) op = copyst(op, "th");
 	return(op);
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4706) /* Ignore the "assignment within conditional expression" warning */
+#endif
+
 char *
 copyst(buffer, string)
 char    *buffer;
@@ -167,3 +174,8 @@ char    *string;
 	while ((*op = *ip++)) op++;
 	return (op);
 }
+
+#ifdef _MSC_VER
+#pragma warning(default:4706)
+#endif
+

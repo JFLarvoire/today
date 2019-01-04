@@ -18,9 +18,7 @@
  *      copyst          (String copy routine)
  */
 
-extern  char    *nbrtxt();
-extern  char    *copyst();
-extern  char    *datetxt();
+#include "today.h"
 
 static char *daynames[] = {
 	"Sunday",                       /* Sunday is day zero           */
@@ -47,6 +45,10 @@ static char *monthnames[] = {
 	"November",
 	"December",
 };
+
+/* Forward references to local routines */
+char *datetxt(char *buffer, int year, int month, int day);
+int dayofweek(int year, int month, int day);
 
 char *datetxt(buffer, year, month, day)
 char    *buffer;                        /* Output goes here             */
@@ -79,7 +81,7 @@ int     day;                            /* Day in the month 1 = 1       */
 	}
 }
 
-dayofweek(year, month, day)
+int dayofweek(year, month, day)
 int     year;                                   /* Year, 1978 = 1978    */
 int     month;                                  /* Month, January = 1   */
 int     day;                                    /* Day of month, 1 = 1  */
@@ -96,3 +98,4 @@ int     day;                                    /* Day of month, 1 = 1  */
 		+ yearfactor / 400
 		- yearfactor / 100 * 2) % 7);
 }
+

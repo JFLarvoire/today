@@ -61,7 +61,6 @@ bugs
 
 #endif
 
-//#define	APRIL_FOOLS
 #undef	APRIL_FOOLS
 
 int	__narg	=	1;		/* No prompt if no args		*/
@@ -71,6 +70,8 @@ int	__narg	=	1;		/* No prompt if no args		*/
 #include <time.h>
 #include <ctype.h>
 #include <string.h>
+
+#include "today.h"
 
 #undef NULL
 
@@ -93,11 +94,19 @@ char	*lineptr = linebuffer;		/* Free byte in linebuffer	*/
 int     polish;                         /* Funny mode flag              */
 int	sunrise;			/* Sunrise print flag		*/
 
-extern  char    *datetxt();             /* Date getter                  */
-extern  char    *timetxt();             /* Time of day getter           */
-extern  char    *moontxt();             /* Phase of the moon getter     */
+static	char    outline[500];		/* Output buffer                */
 
-main(argc, argv)
+/* Forward references to local routines */
+void dotime(void);
+int dotexttime(char *text);
+void process(int year, int month, int day, int hour, int minute, int second, int daylight);
+void output(char *text);
+void put(register char c);
+int getLine(void);
+int getval(int flag, int low, int high);
+
+
+int main(argc, argv)
 int     argc;
 char    *argv[];
 /*
@@ -120,8 +129,8 @@ char    *argv[];
  */
 
 {
-  ccpos = 0;			/* New line now                 */
-  wordptr = wordbuffer;		/* Nothing buffered             */
+  ccpos = 0;                      /* New line now                 */
+  wordptr = wordbuffer;           /* Nothing buffered             */
   lineptr = linebuffer;		/* Nothing in output buffer too	*/
   polish = 0;			/* Normal mode			*/
   if (argc > 1 && tolower(argv[1][0]) == 'p') {
@@ -139,14 +148,14 @@ char    *argv[];
   if (argc == 1) sunrise = 1;
   
   if (argc == 2 && ((argv[1][0] == '-') || (argv[1][0] | 040) == 'x')) {
-    while (!getline()) {	/* Read and print times */
+    while (!getLine()) {	/* Read and print times */
       dotexttime(line);
     }
-    return;
+    return 0;
   }
   else if (argc > 1) {
     if (dotexttime(argv[1]) == 0)
-      return;
+      return 0;
   }
   /*
    * Here if no parameters or an error in the parameter field.
@@ -157,14 +166,15 @@ char    *argv[];
 #ifdef	UNIX
   execl(COOKIEPROGRAM, "cookie", 0);
 #endif
+  return 0;
 }
 
-dotime()
+void dotime()
 /*
  * Print the time of day for Unix or VMS native mode.
  */
 {
-  long    tvec;                   /* Buffer for time function     */
+  time_t  tvec;                   /* Buffer for time function     */
   struct  tm *localtime();	/* Unix time decompile function */
   struct  tm *p;			/* Local pointer to time of day */
   int     year;
@@ -184,7 +194,7 @@ dotime()
 	  p->tm_min, p->tm_sec, p->tm_isdst);
 }
 
-dotexttime(text)
+int dotexttime(text)
 char    *text;                          /* Time text                    */
 /*
  * Create the time values and print them, return 1 on error.
@@ -232,9 +242,7 @@ char    *text;                          /* Time text                    */
   return(1);				/* Error exit		*/
 }
 
-static	char    outline[500];		/* Output buffer                */
-
-process(year, month, day, hour, minute, second, daylight)
+void process(year, month, day, hour, minute, second, daylight)
 int     year;                           /* Year		1900 = 1900	*/
 int     month;                          /* Month	January = 1	*/
 int     day;                            /* Day		1 = 1		*/
@@ -272,8 +280,11 @@ int	daylight;			/* Daylight savings time if 1	*/
   
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4706) /* Ignore the "assignment within conditional expression" warning */
+#endif
 
-output(text)
+void output(text)
 char    *text;                                  /* What to print        */
 /*
  * Output routine.  Text is output using put() so that lines are
@@ -286,7 +297,7 @@ char    *text;                                  /* What to print        */
   register char	*wp;		/* Word pointer		*/
 
   in = text;
-  while (c = *in++) {
+  while ((c = *in++)) {
     switch (c) {
     case '\n':			/* Force new line       */
     case ' ':			/* or a space seen      */
@@ -302,7 +313,7 @@ char    *text;                                  /* What to print        */
 	for (wp = wordbuffer; wp < wordptr;) {
 	  put(*wp++);
 	}
-	ccpos += (wordptr - wordbuffer);
+	ccpos += (int)(wordptr - wordbuffer);
 	wordptr = wordbuffer;	/* Empty buffer	*/
       }
       if (c == '\n') {
@@ -317,7 +328,11 @@ char    *text;                                  /* What to print        */
   }
 }
 
-put(c)
+#ifdef _MSC_VER
+#pragma warning(default:4706)
+#endif
+
+void put(c)
 register char	c;
 /*
  * Actual output routine
@@ -333,34 +348,29 @@ register char	c;
   *lineptr++ = c;
 } 
 
+int getLine()
 /*
  * Read text to global line[].  Return 1 on end of file, zero on ok.
  */
-getline() {
-  char *t;
-#ifdef NJC
+{
   char *p;
 
-  // slightly safer handling of gets
-  // '\n' line is not an empty line
-  // EOF should be an empty line
-  if(fgets(line, sizeof(line), stdin) == NULL) {
+  /* slightly safer handling of gets */
+  /* '\n' line is not an empty line  */
+  /* EOF should be an empty line     */
+  if (fgets(line, sizeof(line), stdin) == NULL) {
     return(1);
   }
 
-  if((p = strchr(line, '\n')) != NULL) {
+  if ((p = strchr(line, '\n')) != NULL) {
     *p = '\0';
   }
 
   return(0);
-  // was
-  // return(fgets(line, sizeof(line), stdin) == NULL);
-#else  // old and unsafe
-  return (gets(line) == NULL);
-#endif
+
 }
 
-getval(flag, low, high)
+int getval(flag, low, high)
 int     flag;
 int     low;
 int     high;
@@ -376,7 +386,7 @@ int     high;
   register int temp;
   
   if (*valptr == '\0') return(flag);        /* Default?             */
-  while (*valptr && (*valptr < '0' || *valptr > '9')) *valptr++;
+  while (*valptr && (*valptr < '0' || *valptr > '9')) valptr++;
   /* The above allows for 78.04.22 format */
   for (value = i = 0; i < 2; i++) {
     temp = *valptr++ - '0';

@@ -1,7 +1,3 @@
-# include	<stdio.h>
-# include	<time.h>
-# include	<math.h>
-
 #define EPOCH   1985
 #define EPSILONg 279.611371     /* solar ecliptic long at EPOCH */
 #define RHOg     282.680403     /* solar ecliptic long of perigee at EPOCH */
@@ -13,3 +9,4 @@
 #ifndef PI
 # define	PI         3.141592654
 #endif
+

@@ -12,10 +12,14 @@
 
 #include <stdio.h>
 
+#include "today.h"
+#include "moontx.h"
+
 static	char	potm[64];
 
-main()
+int main()
 {
     moontxt(potm);
     printf("Phase-of-the-Moon:%s\n", potm+11);
+    return 0;
 }

@@ -27,8 +27,12 @@
  *      copyst          (String copy routine)
  */
 
-extern char     *nbrtxt();
-extern char     *copyst();
+#include "params.h"
+#include "today.h"
+
+/* Forward references to local routines */
+/* char *timetxt(char *buffer, int hour, int minute, int second, int daylight); // Defined in today.h */
+char *stuff(char *buffer, int value, int flag, char *leading, char *trailing);
 
 char *timetxt(buffer, hour, minute, second, daylight)
 char    *buffer;                        /* Output buffer                */
@@ -41,9 +45,8 @@ int     daylight;                       /* Non-zero if savings time     */
  */
 {
 	char            *op;            /* Output pointer               */
-	register int    late;           /* after hour or afternoon      */
-	register int	sec;		/* Seconds temp			*/
-	char		*stuff();	/* Buffer stuffer		*/
+	register int    late = 0;       /* after hour or afternoon      */
+	register int	sec = 0;	/* Seconds temp			*/
 
 	op = buffer;                    /* Setup buffer pointer         */
 	if (hour < 0) {			/* If it's a dummy call,	*/
@@ -62,13 +65,16 @@ int     daylight;                       /* Non-zero if savings time     */
 	 * If so, output the time before the next hour.
 	 */
 	if (minute < 0) second = (-2);  /* No minutes means no seconds  */
-	else if ((late = (minute > 30 || (minute == 30 && second > 0)))) {
+	else {
+	    late = (minute > 30 || (minute == 30 && second > 0));
+	    if (late) {
 		if (second > 0) {       /* Before next hour             */
 			second = 60 - second;
 			minute += 1;    /* Diddle the minute, too       */
 		}
 		minute = 60 - minute;   /* Minutes before next hour     */
 		hour += 1;              /* Frobozz next hour getter     */
+	    }
 	}
 	/*
 	 * Decisions, decisions:
@@ -113,17 +119,16 @@ int     daylight;                       /* Non-zero if savings time     */
 	else if (hour == 12)
 		op = copyst(op, "noon");
 	else {
-		if (late = (hour > 12))
-			hour = hour - 12;
+	  	late = (hour > 12);
+		if (late) hour = hour - 12;
 		op = nbrtxt(op, hour, 0);
 		op = copyst(op, (late) ? " PM" : " AM");
 	}
 	if (daylight != -1) 
-	    op = copyst(op, (daylight) ? TZ_Str1 : TZ_Str2); /* See Makefile */
+	    op = copyst(op, (daylight) ? DTZS : TZS); /* See config.h */
 	return(op);
 }
 
-//static char *
 char *
 stuff(buffer, value, flag, leading, trailing)
 char    *buffer;                        /* Output goes here             */
@@ -150,3 +155,4 @@ char    *trailing;                      /* and followed by ...          */
 	}
 	return(op);
 }
+

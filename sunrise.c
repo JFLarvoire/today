@@ -1,17 +1,74 @@
 /*
 ** Sunrise.c - computes the sunrise and sends the output to stdout
+**
+** Authors:
+** NC  ncherry@linuxha.com
+** JFL jf.larvoire@free.fr
+**
+** History:
+** 2002           NC published at http://www.linuxha.com/common/wea_tools.html
+** 2018-12-22 JFL Added command-line parsing, and a help screen.
+**                Added options for adding or substracting a time offset.
 */
 
 #include <stdio.h>
+#include <string.h>
 
-int
-main(int argc, char *argv[])
-{
+#include "today.h"
+
+#define streq(s1, s2) (!strcmp(s1, s2))
+
+void usage() {
+  printf("\
+sunrise - Display the sunrise time\n\
+\n\
+Usage: sunrise [OPTIONS]\n\
+\n\
+Options:\n\
+  -?        Display this help screen\n\
+  -N[:M]    Display time N hours and M minutes before sunrise\n\
+  +N[:M]    Display time N hours and M minutes after sunrise\n\
+\n\
+");
+}
+
+int main(int argc, char *argv[]) {
+  int i;
   int sunrh, sunrm, sunsh, sunsm;
+  int nHours = 0, nMinutes = 0;
 
+  for (i=1; i<argc; i++) {
+    char *arg = argv[i];
+    if (   streq(arg, "-?")
+        || streq(arg, "-h")
+        || streq(arg, "--help")
+        ) {
+      usage();
+      return 0;
+    }
+    if ((arg[0] == '-') && (sscanf(arg+1, "%d:%d", &nHours, &nMinutes))) {
+      nHours = -nHours;
+      nMinutes = -nMinutes;
+      continue;
+    }
+    if ((arg[0] == '+') && (sscanf(arg+1, "%d:%d", &nHours, &nMinutes))) {
+      continue;
+    }
+  }
+  
   sun(&sunrh, &sunrm, &sunsh, &sunsm);
 
+  sunrm += nMinutes;
+  if (sunrm < 0) {
+    sunrm += 60;
+    sunrh -= 1;
+  } else if (sunrm >= 60) {
+    sunrm -= 60;
+    sunrh += 1;
+  }
+  sunrh += nHours;
+  
   printf("%02d:%02d\n", sunrh, sunrm);
 
-  return(0);
+  return 0;
 }

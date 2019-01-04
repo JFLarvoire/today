@@ -13,20 +13,28 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
+#include <math.h>
 
-# include	"moontx.h"
+#include "today.h"
+#include "moontx.h"
 
-double dtor();
-double potm();
+/* Forward references to local routines */
+/* void  moontxt(char buf[]);	// In today.h */
+double potm(double days);
+/* double dtor(double deg);  	// In today.h */
+int ly(int yr);
+void ptr_adj360(double *deg);
 
 struct tm *gmtime();
 
-moontxt(buf)
+void moontxt(buf)
 char	buf[];
 {
   char *cp=buf;
 
-  long *lo = (long *) calloc (1, sizeof(long)); /* used by time calls */
+  time_t *lo = (time_t *) calloc (1, sizeof(time_t)); /* used by time calls */
   struct tm *pt; /* ptr to time structure */
 
   double days;   /* days since EPOCH */
@@ -34,9 +42,9 @@ char	buf[];
   double phase2; /* percent of lunar surface illuminated one day later */
   int i = EPOCH;
 
-  time (lo);  /* get system time */
+  time(lo);  /* get system time */
   pt = gmtime(lo);  /* get ptr to gmt time struct */
-  cfree(lo);
+  free(lo);
 
   /* calculate days since EPOCH */
   days = (pt->tm_yday +1.0) + ((pt->tm_hour + (pt->tm_min / 60.0)
@@ -141,11 +149,11 @@ double days;
   return (50.0 * (1 - cos(dtor(D))));    /* sec 63 #3 */
 }
 
-ly(yr)
+int ly(yr)
 int yr;
 {
   /* returns 1 if leapyear, 0 otherwise */
-  return (yr % 4 == 0 && yr % 100 != 0 || yr % 400 == 0);
+  return ((yr % 4 == 0 && yr % 100 != 0) || yr % 400 == 0);
 }
 
 double dtor(deg)
@@ -155,7 +163,7 @@ double deg;
   return (deg * PI / 180.0);
 }
 
-ptr_adj360(deg)
+void ptr_adj360(deg)
 double *deg;
 {
   /* adjust value so 0 <= deg <= 360 */
@@ -165,3 +173,4 @@ double *deg;
     *deg -= 360.0;
   while (*deg < 0.0 || *deg > 360.0);
 }
+
