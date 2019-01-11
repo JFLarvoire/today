@@ -1,8 +1,5 @@
 /***** hpfcla:net.sources / nsc-pdc!rgb / 10:24 am  May 16, 1985
 *
-* Changed constants to Fort Collins, Colorado.  (ajs, 850520)
-* Made other minor output format improvements also.
-* 
 *        sun <options>
 *
 *        options:        -t hh:mm:ss	time (default is current system time)
@@ -30,8 +27,17 @@
 *	 June, 1984 by Roger W. Sinnott
 *
 *	 Author Robert Bond - Beaverton Oregon.
-*	
+*		Neil Cherry
+*		Jean-Francois Larvoire - Saint Hilaire, France
+*
+*   History:
+*    2009-12-23 NC  Changed constants to Fort Collins, Colorado.  (ajs, 850520)
+*		    Made other minor output format improvements also.
+*    2019-01-11 JFL Added optional argument pszDate to routine sun().
+*		    Include stptime.c when building with Microsoft tools.
 */
+
+#define _GNU_SOURCE		/* Force defining strptime */
 
 #include <stdio.h>
 #include <math.h>
@@ -41,6 +47,10 @@
 
 #include "params.h"
 #include "today.h"
+
+#if defined(_MSC_VER) && !defined(MSVCLIBX) /* Microsoft C library does not define this routine */
+#include "strptime.c"
+#endif
 
 #ifndef PI
 #define PI       3.141592654
@@ -90,8 +100,9 @@ double lon = LON;		/* Default Longitude */
 int debug = 0;
 int popt = 0;
 
-void sun(sunrh, sunrm, sunsh, sunsm)
+void sun(sunrh, sunrm, sunsh, sunsm, pszDate)
 int *sunrh, *sunrm, *sunsh, *sunsm;
+char *pszDate;
 {
     double ed, jd;
     double alpha1, delta1, alpha2, delta2, st1r, st1s, st2r, st2s;
@@ -104,8 +115,22 @@ int *sunrh, *sunrm, *sunsh, *sunsm;
     int h, m;
     struct tm *pt;
 
-    time(&sec_1970);
-    pt = localtime(&sec_1970);  
+    if (debug) printf("sun(%p, %p, %p, %p, \"%s\");\n",
+      			sunrh, sunrm, sunsh, sunsm, pszDate);
+
+    if (pszDate) {	/* If we were given a date, use it */
+      if ((pt = (struct tm *)calloc(sizeof(struct tm), 1)) == NULL) {
+      	fprintf(stderr, "Error: Out of memory\n");
+      	return;
+      }
+      if (strptime(pszDate, "%Y-%m-%d", pt) == NULL) {
+      	fprintf(stderr, "Error: Invalid date: '%s'\n", pszDate);
+      	return;
+      }
+    } else {		/* Use today's date */
+      time(&sec_1970);
+      pt = localtime(&sec_1970);  
+    }
 
     th = pt->tm_hour;
     tm = pt->tm_min;
@@ -117,7 +142,6 @@ int *sunrh, *sunrm, *sunsh, *sunsm;
 	tz--;
 	tzs = dtzs;	
     }
-
 
     if (debug)
         printf("Date: %d/%d/%d,  Time: %d:%d:%d, Tz: %d, Lat: %lf, Lon: %lf \n",
@@ -290,7 +314,7 @@ julian_date(m, d, y) int m, d, y;
 	m += 12;
     }
     if (y < 1583) {
-	printf("Can't handle dates before 1583\n");
+	fprintf(stderr, "Can't handle dates before 1583\n");
 	exit(1);
     }
     a = (long)y/100;
@@ -424,7 +448,7 @@ double alpha, delta, *lstr, *lsts, *ar, *as;
 
     tar = sin_deg(delta)/cos_deg(lat);
     if (tar < -1.0 || tar > 1.0) {
-	printf("The object is circumpolar\n");
+	fprintf(stderr, "The object is circumpolar\n");
 	exit (1);
     }
     *ar = acos_deg(tar);
