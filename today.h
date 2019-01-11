@@ -7,7 +7,7 @@ extern void  moontxt(char buf[]);                                               
 extern double dtor(double deg);
 
 /* High level functions */
-extern void sun(int *sunrh, int *sunrm, int *sunsh, int *sunsm);
+extern void sun(int *sunrh, int *sunrm, int *sunsh, int *sunsm, char *pszDate);
 
 /* Avoid Microsoft C complaints */ 
 #ifdef _MSC_VER
