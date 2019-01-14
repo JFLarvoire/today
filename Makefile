@@ -154,13 +154,13 @@ $(XPN) $(OPN) $(LPN) $(XPD) $(OPD) $(LPD):
 	true
 
 # List of object files for each program
-$(XP)/potm: $(OP)/potm.o $(OP)/moontx.o
+$(XP)/potm: $(OP)/potm.o $(OP)/moontx.o $(OP)/parsetime.o
 
-$(XP)/today: $(OP)/today.o $(OP)/datetx.o $(OP)/moontx.o $(OP)/nbrtxt.o $(OP)/timetx.o $(OP)/sun.o
+$(XP)/today: $(OP)/today.o $(OP)/datetx.o $(OP)/moontx.o $(OP)/nbrtxt.o $(OP)/timetx.o $(OP)/sun.o $(OP)/parsetime.o
 
-$(XP)/sunrise: $(OP)/sunrise.o $(OP)/moontx.o $(OP)/sun.o
+$(XP)/sunrise: $(OP)/sunrise.o $(OP)/moontx.o $(OP)/sun.o $(OP)/parsetime.o
 
-$(XP)/sunset: $(OP)/sunset.o $(OP)/moontx.o $(OP)/sun.o
+$(XP)/sunset: $(OP)/sunset.o $(OP)/moontx.o $(OP)/sun.o $(OP)/parsetime.o
 
 .PHONY: install
 install: all

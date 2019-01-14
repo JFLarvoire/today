@@ -29,22 +29,24 @@ void ptr_adj360(double *deg);
 
 struct tm *gmtime();
 
-void moontxt(buf)
+void moontxt(buf, pt)
 char	buf[];
+struct	tm *pt;  /* ptr to time structure */
 {
   char *cp=buf;
-
-  time_t *lo = (time_t *) calloc (1, sizeof(time_t)); /* used by time calls */
-  struct tm *pt; /* ptr to time structure */
-
   double days;   /* days since EPOCH */
   double phase;  /* percent of lunar surface illuminated */
   double phase2; /* percent of lunar surface illuminated one day later */
   int i = EPOCH;
 
-  time(lo);  /* get system time */
-  pt = gmtime(lo);  /* get ptr to gmt time struct */
-  free(lo);
+  if (debug) printf("moontxt(%p, %p);\n", buf, pt);
+
+  if (!pt) {	/* If we were given no date, use now */
+    time_t lo;		/* used by time calls */
+    time(&lo);          /* get system time */
+    pt = gmtime(&lo);   /* get ptr to gmt time struct */
+  }
+  if (debug) printf("pt = {%d, %d, %d, %d, %d, %d, %d);\n", pt->tm_year, pt->tm_mon, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec, pt->tm_isdst);
 
   /* calculate days since EPOCH */
   days = (pt->tm_yday +1.0) + ((pt->tm_hour + (pt->tm_min / 60.0)

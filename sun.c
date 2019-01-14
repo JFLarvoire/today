@@ -37,8 +37,6 @@
 *		    Include stptime.c when building with Microsoft tools.
 */
 
-#define _GNU_SOURCE		/* Force defining strptime */
-
 #include <stdio.h>
 #include <math.h>
 #include <sys/types.h>
@@ -47,10 +45,6 @@
 
 #include "params.h"
 #include "today.h"
-
-#if defined(_MSC_VER) && !defined(MSVCLIBX) /* Microsoft C library does not define this routine */
-#include "strptime.c"
-#endif
 
 #ifndef PI
 #define PI       3.141592654
@@ -97,12 +91,11 @@ char *dtzs = DTZS;		/* Default daylight savings time string */
 double lat = LAT;		/* Default latitude */
 double lon = LON;		/* Default Longitude */ 
 
-int debug = 0;
 int popt = 0;
 
-void sun(sunrh, sunrm, sunsh, sunsm, pszDate)
+void sun(sunrh, sunrm, sunsh, sunsm, pt)
 int *sunrh, *sunrm, *sunsh, *sunsm;
-char *pszDate;
+struct tm *pt;
 {
     double ed, jd;
     double alpha1, delta1, alpha2, delta2, st1r, st1s, st2r, st2s;
@@ -111,26 +104,17 @@ char *pszDate;
     double lambda1, lambda2;
     double alt, az, gst, m1;
     double hsm, ratio;
-    time_t sec_1970;
     int h, m;
-    struct tm *pt;
+    
+    if (debug) printf("sun(%p, %p, %p, %p, %p);\n",
+      			sunrh, sunrm, sunsh, sunsm, pt);
 
-    if (debug) printf("sun(%p, %p, %p, %p, \"%s\");\n",
-      			sunrh, sunrm, sunsh, sunsm, pszDate);
-
-    if (pszDate) {	/* If we were given a date, use it */
-      if ((pt = (struct tm *)calloc(sizeof(struct tm), 1)) == NULL) {
-      	fprintf(stderr, "Error: Out of memory\n");
-      	return;
-      }
-      if (strptime(pszDate, "%Y-%m-%d", pt) == NULL) {
-      	fprintf(stderr, "Error: Invalid date: '%s'\n", pszDate);
-      	return;
-      }
-    } else {		/* Use today's date */
-      time(&sec_1970);
-      pt = localtime(&sec_1970);  
+    if (!pt) {	/* If we were given no date, use now */
+	time_t sec_1970;	/* used by time calls */
+	time(&sec_1970);	/* get system time */
+	pt = gmtime(&sec_1970);	/* get ptr to gmt time struct */
     }
+    if (debug) printf("pt = {%d, %d, %d, %d, %d, %d, %d);\n", pt->tm_year, pt->tm_mon, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec, pt->tm_isdst);
 
     th = pt->tm_hour;
     tm = pt->tm_min;

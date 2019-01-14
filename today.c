@@ -5,16 +5,26 @@
  *
  * Define UNIX for "native" Unix
  *
- * Changes:
- * 2002           NC published at http://www.linuxha.com/common/wea_tools.html
- * 2019-01-11 JFL Generalized command-line parsing, and added a help screen.
- *		  Added option -d to dynamically enable the debug mode.
- *                Updated dotexttime() to support standard ISO dates like 2018-12-25T23:59,
- *		  and extended ones like "2018-12-25 23h59m59s".
- *		  Bugfix: process() always called sun() for today, not for the specified day.
- *		  Added option -w to set the output width, and default to the screen width.
- *		  Added options -a, -m, -q to further control what's displayed.
+ * Authors:
+ *   NC  ncherry@linuxha.com
+ *   JFL jf.larvoire@free.fr
+ *
+ * History:
+ *   2002       NC  published at http://www.linuxha.com/common/wea_tools.html
+ *   2019-01-11 JFL Generalized command-line parsing, and added a help screen.
+ *		    Added option -d to dynamically enable the debug mode.
+ *		    Updated dotexttime() to support standard ISO dates like 2018-12-25T23:59,
+ *		    and extended ones like "2018-12-25 23h59m59s".
+ *		    Bugfix: process() always called sun() for today, not for the specified day.
+ *		    Added option -w to set the output width, and default to the screen width.
+ *		    Added options -a, -m, -q to further control what's displayed.
+ *   2019-01-12 JFL Bugfix: process() always called moontx() for today, not for the specified day.
+ *		    Added option -d to dynamically enable the debug mode.
+ *   2019-01-14 JFL Changed sun() and moontx() last argument to a struct tm.
+ *		    Added option -V to display the program version.
  */
+
+#define VERSION "2019-01-14"
 
 /*)BUILD	$(PROGRAM)	= today
 		$(FILES)	= { today datetx timetx nbrtxt moontx }
@@ -84,6 +94,7 @@ int	__narg	=	1;		/* No prompt if no args		*/
 #include <stdlib.h>
 
 #include "today.h"
+#include "include/debugm.h"
 
 #include "screensize.c" /* Define the OS-specific function GetScreenColumns() */
 
@@ -96,13 +107,9 @@ int	__narg	=	1;		/* No prompt if no args		*/
 #define	FALSE		0
 #define	TRUE		1
 
-int day_month[] = {			/* Needed for dotexttime()      */
-	0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-};
 int     ccpos;                          /* Current line position        */
 char    lastbyte;                       /* Memory for output()          */
 char    line[100];                      /* Data line for input function */
-char    *valptr;                        /* Needed for number converter  */
 char    wordbuffer[MAXLINEWIDTH];       /* Buffer for output function   */
 char    *wordptr = wordbuffer;          /* Free byte in wordbuffer      */
 char	linebuffer[MAXLINEWIDTH+2];	/* Output text buffer		*/
@@ -113,16 +120,15 @@ int	moon;				/* Sunrise print flag		*/
 int	quiet;				/* Quiet mode flag		*/
 int     lineWidth = LINEWIDTH;		/* Output width			*/
 static	char    outline[500];		/* Output buffer                */
-static  int     debug = 0;
+int     debug = 0;
 
 /* Forward references to local routines */
 void dotime(void);
 int dotexttime(char *text);
-void process(int year, int month, int day, int hour, int minute, int second, int daylight);
+void process(struct tm *ptm);
 void output(char *text);
 void put(register char c);
 int getLine(void);
-int getval(int flag, int low, int high);
 
 
 void usage() {
@@ -133,15 +139,16 @@ Usage: today [OPTIONS] [DATE [...]]\n\
 \n\
 Options:\n\
   -?|-h|--help          Display this help screen\n\
-  -a	                Print all details. Implies -m and -s\n\
-  -m	                Also print the moon phase\n\
+  -a                    Print all details. Implies -m and -s\n\
+  -m                    Also print the moon phase\n\
   -p|p|P                Polish joke mode\n\
   -q                    Quiet mode. Print just the bare date\n\
   -s|s|S                Also print sunrise and sunset\n\
+  -V                    Display the program version\n\
   -w WIDTH              Set the line width. 0=unlimited. Default=Screen width\n\
   -|-x|x|X              Dates are read from the standard input\n\
 \n\
-Date:			Prints the day, and optional time, in plain English.\n\
+Date:                   Prints the day, and optional time, in plain English.\n\
   YYYY-MM-DD[THH:MM:SS] ISO format. Ex: 2018-12-25T23:59 or \"2018-12-25 23h59m\"\n\
   [+CC]YYMMDD[HHMMSS]   Compacted ISO format.\n\
 \n\
@@ -159,6 +166,7 @@ char    *argv[];
  */
 {
   int i;
+  int done = 0;
 
   ccpos = 0;                    /* New line now                 */
   wordptr = wordbuffer;         /* Nothing buffered             */
@@ -212,6 +220,10 @@ optionS:
 	sunrise = 1;
 	continue;
       }
+      if (cOpt == 'v') {	/* -V: Display the version */
+	printf(VERSION " " EXE_OS_NAME "\n");
+	return 0;
+      }
       if ((cOpt == 'w') && ((i+1)<argc)) { /* -w = Set output width */
       	lineWidth = atoi(argv[++i]);
 	if ((lineWidth <= 0) || (lineWidth > MAXLINEWIDTH)) lineWidth = MAXLINEWIDTH;
@@ -233,13 +245,13 @@ optionX:
     if (cArg == 's') goto optionS;
     if (cArg == 'x') goto optionX;  /* "today x" is needed for vms. */
     /* Else this is supposed to be a date. Process it */
-    if (dotexttime(arg) == 0) return 0;
+    if (dotexttime(arg) == 0) done = 1;
   }
 
   /*
    * Here if no parameters or an error in the parameter field.
    */
-  dotime();			/* Print the time.              */
+  if (!done) dotime();		/* Print the time.              */
 
 #ifdef	UNIX
   if (!quiet) {
@@ -258,23 +270,21 @@ void dotime()
   time_t  tvec;                   /* Buffer for time function     */
   struct  tm *localtime();	/* Unix time decompile function */
   struct  tm *p;			/* Local pointer to time of day */
-  int     year;
-  int     month;
 
   if (debug) printf("dotime();\n");
 
   time(&tvec);                     /* Get the time of day          */
   p = localtime(&tvec);           /* Make it more understandable  */
-  year = p->tm_year + 1900;
-  month = p->tm_mon + 1;
 
 #ifdef	APRIL_FOOLS
-  if (month == 4 && p->tm_mday == 1)
-    polish = !polish;
+  {
+  int     month;
+  month = p->tm_mon + 1;
+  if (month == 4 && p->tm_mday == 1) polish = !polish;
+  }
 #endif
 
-  process(year, month, p->tm_mday, p->tm_hour,
-	  p->tm_min, p->tm_sec, p->tm_isdst);
+  process(p);
 }
 
 int dotexttime(text)
@@ -282,71 +292,29 @@ char    *text;                          /* Time text                    */
 /*
  * Create the time values and print them, return 1 on error.
  */
-
 {
-  int     epoch;                  /* Which century                */
-  int     year;
-  int     month;
-  int     day;
-  int     hour;
-  int     minute;
-  int     second;
-  int     leapyear;
-  int     hasCentury = 0;
-
-  if (debug) printf("dotexttime(\"%s\");\n", text);
-
-  valptr = text;                          /* Setup for getval()   */
-  while (*valptr == ' ') valptr++;        /* Leading blanks skip  */
-  if (*valptr == '+') {
-    valptr++;
-    hasCentury = 1;
-  } else if ((strlen(valptr) > 4) && (valptr[4] == '-')) {
-    hasCentury = 1;
-  }
-  if (!hasCentury) {
-    epoch = 1900;                   /* Default for now      */
-  } else {
-    if ((epoch = getval(-1, 00, 99)) < 0) goto bad;
-    epoch *= 100;		/* Make it a real epoch */
-  }
-
-  if ((year = getval(-1, 00, 99)) < 0) goto bad;
-  if ((!hasCentury) && (year < 70)) epoch = 2000;
-  year += epoch;
-  leapyear = ((year%4) == 0) && (((year%400) == 0) || (year%100 != 0));
-  if (*valptr == '-') valptr++;
-  if ((month = getval(-1, 1, 12)) < 0) goto bad;
-  if (*valptr == '-') valptr++;
-  if ((day = getval(-1, 1,
-		    (month == 2 && leapyear) ? 29 : day_month[month])) < 0)
-    goto bad;
-  while ((*valptr == 'T') || (*valptr == ' ') || (*valptr == '\t')) valptr++;
-  if ((hour = getval(-2, 0, 23)) == -1) goto bad;
-  while ((*valptr == 'H') || (*valptr == 'h') || (*valptr == ':')) valptr++;
-  if ((minute = getval(-2, 0, 59)) == -1) goto bad;
-  while ((*valptr == 'M') || (*valptr == 'm') || (*valptr == ':')) valptr++;
-  if ((second = getval(-2, 0, 59)) == -1) goto bad;
-  process(year, month, day, hour, minute, second, 0);
+  struct tm stm;
+  int iErr;
+  
+  iErr = parsetime(text, &stm);
+  if (iErr) goto bad;
+  process(&stm);
   return(0);				/* Normal exit		*/
 
- bad:    output("Bad parameters or date out of range in \"");
+bad:
+  if (debug) printf("Error at offset %d in text\n", iErr - 1);
+  output("Bad parameters or date out of range in \"");
   output(text);
   output("\" after scanning \"");
-  *valptr = '\0';
+  text[iErr - 1] = '\0';
   output(text);
   output("\".\n");
   return(1);				/* Error exit		*/
+
 }
 
-void process(year, month, day, hour, minute, second, daylight)
-int     year;                           /* Year		1900 = 1900	*/
-int     month;                          /* Month	January = 1	*/
-int     day;                            /* Day		1 = 1		*/
-int	hour;				/* Hour		0 .. 23		*/
-int	minute;				/* Minute	0 .. 59		*/
-int	second;				/* Second	0 .. 59		*/
-int	daylight;			/* Daylight savings time if 1	*/
+void process(ptm)
+struct tm *ptm;
 /*
  * Output the information.  Note that the parameters are within range.
  */
@@ -354,14 +322,21 @@ int	daylight;			/* Daylight savings time if 1	*/
   char szDateTime[32];
   char *pszIntroduction;
   time_t sec_1970;
-  struct tm *pt;
+  struct tm *ptmNow;
+  int year = ptm->tm_year + 1900;	/* Year		1900 = 1900	*/
+  int month = ptm->tm_mon + 1;		/* Month	January = 1	*/
+  int day = ptm->tm_mday;		/* Day		1 = 1		*/
+  int hour = ptm->tm_hour;		/* Hour		0 .. 23		*/
+  int minute = ptm->tm_min;		/* Minute	0 .. 59		*/
+  int second = ptm->tm_sec;		/* Second	0 .. 59		*/
+  int daylight = ptm->tm_isdst;		/* Daylight savings time if 1	*/
 
-  if (debug) printf("process(%d, %d, %d, %d, %d, %d, %d);\n", year, month, day, hour, minute, second, daylight);
+  if (debug) printf("process({%d, %d, %d, %d, %d, %d, %d});\n", ptm->tm_year, ptm->tm_mon, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_isdst);
 
   time(&sec_1970);
-  pt = localtime(&sec_1970);
-  if (debug) printf("pt = {%d, %d, %d, %d, %d, %d, %d);\n", pt->tm_year, pt->tm_mon, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec, pt->tm_isdst);
-  if ((pt->tm_year + 1900) == year && (pt->tm_mon + 1) == month && pt->tm_mday == day) {
+  ptmNow = localtime(&sec_1970);
+  if (debug) printf("now = {%d, %d, %d, %d, %d, %d, %d};\n", ptmNow->tm_year, ptmNow->tm_mon, ptmNow->tm_mday, ptmNow->tm_hour, ptmNow->tm_min, ptmNow->tm_sec, ptmNow->tm_isdst);
+  if (ptm->tm_year == ptmNow->tm_year && ptm->tm_mon == ptmNow->tm_mon && ptm->tm_mday == ptmNow->tm_mday) {
     pszIntroduction = "Today is ";
   } else {
     sprintf(szDateTime, "%04d-%02d-%02d is ", year, month, day);
@@ -378,8 +353,7 @@ int	daylight;			/* Daylight savings time if 1	*/
   if (hour >= 0 || minute >= 0 || second >= 0) output(".\n");
   if (sunrise) {
     int sunrh, sunrm, sunsh, sunsm;
-    sprintf(szDateTime, "%04d-%02d-%02dT%02d:%02d:%02d", year, month, day, hour, minute, second);
-    sun(&sunrh, &sunrm, &sunsh, &sunsm, szDateTime);
+    sun(&sunrh, &sunrm, &sunsh, &sunsm, ptm);
     output("Sunrise is at ");
     timetxt(outline, sunrh, sunrm, -2, -1);
     output(outline);
@@ -389,7 +363,7 @@ int	daylight;			/* Daylight savings time if 1	*/
     output(".\n");
   }
   if (moon) {
-    moontxt(outline);	/* replaced by smarter version */
+    moontxt(outline, ptm);	/* replaced by smarter version */
     output(outline);
     output(".\n");
   }
@@ -475,32 +449,5 @@ int getLine()
 
   return(0);
 
-}
-
-int getval(flag, low, high)
-int     flag;
-int     low;
-int     high;
-/*
- * Global valptr points to a 2-digit positive decimal integer.
- * Skip over leading non-numbers and return the value.
- * Return flag if text[0] == '\0'. Return -1 if the text is bad,
- * or if the value is out of the low:high range.
- */
-{
-  register int value;
-  register int i;
-  register int temp;
-
-  while (*valptr == ' ' || *valptr == '\t') valptr++; /* Skip leading spaces */
-  if (*valptr == '\0') return(flag);        /* Default?             */
-  while (*valptr && (*valptr < '0' || *valptr > '9')) valptr++;
-  /* The above allows for 78.04.22 format */
-  for (value = i = 0; i < 2; i++) {
-    temp = *valptr++ - '0';
-    if (temp < 0 || temp > 9) return(-1);
-    value = (value*10) + temp;
-  }
-  return((value >= low && value <= high) ? value : -1);
 }
 
