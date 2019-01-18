@@ -1,12 +1,13 @@
 ##
-#	Makefile for very verbose date command (today).
+# OS-independant make file defining the today programs to build 
 #
 # Changes:
-# 2018-12-24 JFL Adapted to build for Windows with the MsvcLibX library make system
+# 2018-12-24 JFL Adapted to build for Windows with the MsvcLibX library make system.
+# 2019-01-18 JFL Define variable PROGRAMS instead of ALL, now usable both in Windows and Unix.
 #
 
 # List of programs to build
-ALL = sunrise$(_EXE) sunset$(_EXE) today$(_EXE) potm$(_EXE)
+PROGRAMS = sunrise sunset today potm
 
 ZIPFILE = $(OD)today.zip
 ZIPSOURCES = *.c *.h *Makefile *.mak *.bat *.md include

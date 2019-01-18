@@ -8,6 +8,7 @@
 # Changes:
 # 2003-06-01 NC  Published at http://www.linuxha.com/common/wea_tools.html
 # 2018-12-26 JFL Output files into the bin/$(uname -s).$(uname -p)[/Debug] subdirectory.
+# 2019-01-18 JFL Use variable PROGRAMS from Files.mak, instead of ALL.
 #
 
 # Standard installation directories.
@@ -138,7 +139,7 @@ default: all
 
 include Files.mak
 
-all:	dirs $(ALL)
+all:	dirs $(PROGRAMS)
 
 .PHONY: dirs ddirs
 dirs: $(XPN) $(OPN) $(LPN)
