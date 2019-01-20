@@ -141,8 +141,6 @@
 #		    (Useful for Files.mak that work for Unix too.)	      #
 #		    Exclude *.bak, *~, *# from the source file distribution.  #
 #    2019-01-18 JFL The .exe extension is now optional for PROGRAMS list items.
-#		    Added the BUILDING_$(PROGRAM) mechanism for conditionally #
-#		    specifying SOURCES in the NMakefile calling this All.mak. #
 #		    							      #
 #       © Copyright 2016-2017 Hewlett Packard Enterprise Development LP       #
 # Licensed under the Apache 2.0 license - www.apache.org/licenses/LICENSE-2.0 #
@@ -568,8 +566,8 @@ all: all_case2 $(REQS) # Having a batch file is necessary for dynamically updati
 	    :# Make the .exe extension optional in PROGRAMS elements
 	    set "P=%%~p"
 	    if "%%~p"=="%%~np" set "P=!P!.exe"
-	    echo $(SUBMAKE) "OS=$(OS)" "BUILDING_%%~np=1" "!P!" "Debug\!P!"
-		 $(SUBMAKE) "OS=$(OS)" "BUILDING_%%~np=1" "!P!" "Debug\!P!"
+	    echo $(SUBMAKE) "OS=$(OS)" "!P!" "Debug\!P!"
+		 $(SUBMAKE) "OS=$(OS)" "!P!" "Debug\!P!"
 	    if errorlevel 1 (
 		set /A "NFAILED+=1"
 		set "WHAT_FAILED=!WHAT_FAILED! %%~p"
