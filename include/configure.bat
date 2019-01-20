@@ -173,6 +173,7 @@
 :#   2017-03-12 JFL Defining variable OS limits builds to that OS list.       *
 :#   2017-10-27 JFL Changed OUTDIR default to the bin subdirectory.           *
 :#   2018-03-09 JFL Find Windows SDK bin dir when in a %WINSDK_VER% subdir.   *
+:#   2019-01-20 JFL Create local configure.bat and make.bat proxies.          *
 :#                                                                            *
 :#      © Copyright 2016-2018 Hewlett Packard Enterprise Development LP       *
 :# Licensed under the Apache 2.0 license  www.apache.org/licenses/LICENSE-2.0 *
@@ -2479,6 +2480,15 @@ if defined POST_MAKE_ACTIONS (
 :# The config.bat script must explicitly return 0, as in XP some set commands do set errorlevel 1!
 %CONFIG%.
 %CONFIG% exit /b 0 ^&:# Configuration done successfully
+
+:# Create local configure.bat and make.bat proxies
+for %%f in (configure make) do (
+  if not exist %%f.bat (
+    %EXEC% copy %STINCLUDE%\BatProxy.bat %%f.bat ">"NUL 2">"NUL
+  ) else (
+    %EXEC% xcopy /d /y %STINCLUDE%\BatProxy.bat %%f.bat ">"NUL 2">"NUL
+  )
+)
 
 set _DO.XVD=%MACRO% ( %ECHO.XVD% %!%MACRO.ARGS:~1%!% %&% %!%MACRO.ARGS:~1%!% ) %/MACRO%
 
