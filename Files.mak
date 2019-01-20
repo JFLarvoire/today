@@ -7,9 +7,10 @@
 #
 
 # List of programs to build
-PROGRAMS = sunrise sunset today potm
+PROGRAMS = sunrise sunset today potm localtime
 
 # List of source files for each of the above programs
+localtime_SOURCES = localtime.c parsetime.c
 potm_SOURCES = potm.c moontx.c parsetime.c
 sunrise_SOURCES = sunrise.c moontx.c sun.c parsetime.c
 sunset_SOURCES = sunset.c moontx.c sun.c parsetime.c
