@@ -9,6 +9,13 @@
 # List of programs to build
 PROGRAMS = sunrise sunset today potm
 
+# List of source files for each of the above programs
+potm_SOURCES = potm.c moontx.c parsetime.c
+sunrise_SOURCES = sunrise.c moontx.c sun.c parsetime.c
+sunset_SOURCES = sunset.c moontx.c sun.c parsetime.c
+today_SOURCES = today.c datetx.c moontx.c nbrtxt.c timetx.c sun.c parsetime.c
+
+# How to build the source release
 ZIPFILE = $(OD)today.zip
 ZIPSOURCES = *.c *.h *Makefile *.mak *.bat *.md include
 

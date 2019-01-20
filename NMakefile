@@ -18,16 +18,6 @@ help: real-help
 # Kludge using the HAS_SDK_FLAGS variable intended for use with external SDKs
 HAS_SDK_FLAGS = $(HAS_SDK_FLAGS) /D_CRT_SECURE_NO_WARNINGS
 
-!IFDEF BUILDING_potm
-SOURCES = potm.c moontx.c parsetime.c
-!ELSE IFDEF BUILDING_sunrise
-SOURCES = sunrise.c moontx.c sun.c parsetime.c
-!ELSE IFDEF BUILDING_sunset
-SOURCES = sunset.c moontx.c sun.c parsetime.c
-!ELSE IFDEF BUILDING_today
-SOURCES = today.c datetx.c moontx.c nbrtxt.c timetx.c sun.c parsetime.c
-!ENDIF
-
 !INCLUDE <All.mak>
 
 real-help:
