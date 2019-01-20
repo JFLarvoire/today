@@ -8,6 +8,8 @@
  * 2019-01-13 JFL Moved here the parsing code from routine dotexttime() in today.c.
  *                In case of parsing error, return 1 + the offset of the error.
  *                Added code to fill up a struct tm with the result, including the DST flag for the day.
+ * 2019-01-20 JFL Allow entering just the time, in which case use today's date.
+ *		  Added support for GMT times, when there's a Z suffix.
  */
 
 #include <stdio.h>
@@ -30,26 +32,44 @@ struct tm *ptm;
  * Create the time values and print them, return 1 on error.
  */
 {
-  int     epoch;                  /* Which century                */
-  int     year;
-  int     month;
-  int     day;
-  int     hour;
-  int     minute;
-  int     second;
-  int     leapyear;
-  int     hasCentury = 0;
+  int	epoch;                  /* Which century                */
+  int	year;
+  int	month;
+  int	day;
+  int	hour;
+  int	minute;
+  int	second;
+  int	leapyear;
+  int	hasCentury = 0;
+  int	isGMT = 0;
+  int	iLen;
   time_t  t;
 
   if (debug) printf("parsetime(\"%s\");\n", text);
 
   valptr = text;                          /* Setup for getval()   */
   while (*valptr == ' ') valptr++;        /* Leading blanks skip  */
+
+  iLen = (int)strlen(valptr);
+  if (iLen && ((valptr[iLen-1] | 0x20) == 'z')) {
+    isGMT = 1;
+    valptr[--iLen] = '\0';
+  }
+
   if (*valptr == '+') {
     valptr++;
     hasCentury = 1;
-  } else if ((strlen(valptr) > 4) && (valptr[4] == '-')) {
+  } else if ((iLen > 4) && (valptr[4] == '-')) {
     hasCentury = 1;
+  } else if ((iLen > 2) && ((valptr[2] == ':') || ((valptr[2] | 0x20) == 'h'))) {
+    time_t now;
+    struct tm *ptmNow;
+    time(&now);			/* get system time */
+    ptmNow = localtime(&now);	/* get ptr to gmt time struct */
+    year = ptmNow->tm_year + 1900;
+    month = ptmNow->tm_mon + 1;
+    day = ptmNow->tm_mday;
+    goto get_time;
   }
   if (!hasCentury) {
     epoch = 1900;                   /* Default for now      */
@@ -68,10 +88,11 @@ struct tm *ptm;
   if ((day = getval(-1, 1,
 		    (month == 2 && leapyear) ? 29 : day_month[month])) < 0)
     goto bad;
+get_time:
   if ((hour = getval(-2, 0, 23)) == -1) goto bad;
   if ((minute = getval(-2, 0, 59)) == -1) goto bad;
   if ((second = getval(-2, 0, 59)) == -1) goto bad;
-  
+
   memset(ptm, '\0', sizeof(struct tm));
   ptm->tm_year = year - 1900;
   ptm->tm_mon  = month - 1;
@@ -79,22 +100,30 @@ struct tm *ptm;
   ptm->tm_hour = hour;
   ptm->tm_min = minute;
   ptm->tm_sec = second;
-  if (debug) printf("before = {%d, %d, %d, %d, %d, %d, %d};\n", ptm->tm_year, ptm->tm_mon, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_isdst);
+  ptm->tm_isdst = -1; /* Let mktime find out if DST applies or not */
+  if (debug) printf("input tm = {%d, %d, %d, %d, %d, %d, %d};\n", ptm->tm_year, ptm->tm_mon, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_isdst);
 
   /* To fill the rest of the structure tm, convert it to a Unix time, and back */
   if (hour < 0) ptm->tm_hour = 12; /* If some of the entries are missing, enter a reasonable default */
   if (minute < 0) ptm->tm_min = 0;
   if (second < 0) ptm->tm_sec = 0;
   t = mktime(ptm);
+  if (isGMT) {
+    time_t t2 = mktime(gmtime(&t));
+    time_t dt = t-t2;
+    if (debug) printf("Correcting for GMT offset: %s%lds\n", (((long)dt > 0) ? "+" : ""), (long)dt);
+    t += dt; /* Convert t to a local GMT time */
+  }
   *ptm = *localtime(&t);
-  if (ptm->tm_isdst) {
-    t -= 3600;
+  if (ptm->tm_isdst && isGMT) { /* GMT has no DST, so we must correct for the local time DST */
+    if (debug) printf("Correcting for DST offset: +3600s\n");
+    t += 3600;
     *ptm = *localtime(&t);
   }
   if (hour < 0) ptm->tm_hour = hour; /* Flag again the missing entries */
   if (minute < 0) ptm->tm_min = minute;
   if (second < 0) ptm->tm_sec = second;
-  if (debug) printf("after = {%d, %d, %d, %d, %d, %d, %d};\n", ptm->tm_year, ptm->tm_mon, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_isdst);
+  if (debug) printf("return tm = {%d, %d, %d, %d, %d, %d, %d};\n", ptm->tm_year, ptm->tm_mon, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, ptm->tm_isdst);
 
   return(0);				/* Normal exit		*/
 
