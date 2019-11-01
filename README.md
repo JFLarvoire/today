@@ -80,7 +80,7 @@ Important: While installing Visual Studio Community Edition, make sure to select
 
 Run `include\configure.bat`.  
 This locates the Microsoft tools installed, and generates a config.%HOSTNAME%.bat file.  
-This also adds configure.bat and make.bat proxies in the project root directory.
+This also adds configure.bat and make.bat proxies in the project root directory.  
 This needs to be done once before making the first build, then again only if you install other versions of Visual Studio.
 
 Run `make.bat`.  
@@ -89,7 +89,7 @@ The output files will be in `bin\WIN32` for the x86, and in `bin\WIN64` for the 
 If you have Visual Studio 2005 installed, a WIN32s version for Windows 95 will also be built into `bin\WIN95`.  
 If you have MSVC 1.5 installed, a 16-bits version for MS-DOS will also be built into `bin\DOS`.
 
-Copy the executables into a tools directory listed in your PATH. Use C:\Windows if you don't know which directory to use.  
+Copy the executables into a tools directory listed in your PATH. Use C:\Windows if you don't know which directory to use.
 Ex: `copy bin\WIN32\*.exe %windir%`
 
 ### For MS-DOS with Microsoft tools
@@ -115,7 +115,7 @@ The resulting WIN32 exe files will thus run in all versions of DOS and Windows.
 
 ## License
 
-As far as I know, those in the root directory were published on the Internet without specifying a license,
+As far as I know, those in the root directory were published long ago without specifying a license,
 and are thus in the public domain.
 
 The files in the include subdirectory come from the [SysToolsLib](https://github.com/JFLarvoire/SysToolsLib)
