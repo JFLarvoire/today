@@ -10,11 +10,13 @@
  *                Added code to fill up a struct tm with the result, including the DST flag for the day.
  * 2019-01-20 JFL Allow entering just the time, in which case use today's date.
  *		  Added support for GMT times, when there's a Z suffix.
+ * 2019-11-11 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
  */
 
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "today.h"
  
@@ -24,6 +26,7 @@ int day_month[] = {			/* Needed for parsetime()      */
 };
 
 static int getval(int flag, int low, int high);
+static int getvalN(int flag, int low, int high, int nDigits);
 
 int parsetime(text, ptm)
 char    *text;                          /* Time text                    */
@@ -83,11 +86,26 @@ struct tm *ptm;
   year += epoch;
   leapyear = ((year%4) == 0) && (((year%400) == 0) || (year%100 != 0));
   if (*valptr == '-') valptr++;
-  if ((month = getval(-1, 1, 12)) < 0) goto bad;
-  if (*valptr == '-') valptr++;
-  if ((day = getval(-1, 1,
-		    (month == 2 && leapyear) ? 29 : day_month[month])) < 0)
-    goto bad;
+  if (   valptr[0] && isdigit(valptr[0])
+      && valptr[1] && isdigit(valptr[1])
+      && valptr[2] && isdigit(valptr[2])
+      && (!valptr[3] || !isdigit(valptr[3]))) { /* There are exactly 3 digits, so it's a DDD */
+    int m, day_month2[13];
+    if ((day = getvalN(-1, 1, leapyear ? 366 : 365, 3)) < 0) goto bad;
+    for (m=0; m<=12; m++) day_month2[m] = day_month[m];
+    if (leapyear) day_month2[2] = 29;
+    for (month=1; month<=12; month++) {
+      day_month2[month] += day_month2[month-1];
+      if (day_month2[month] >= day) break;
+    }
+    day -= day_month2[month-1];
+  } else { /* It's a MMDD or MM-DD */
+    if ((month = getval(-1, 1, 12)) < 0) goto bad;
+    if (*valptr == '-') valptr++;
+    if ((day = getval(-1, 1,
+		      (month == 2 && leapyear) ? 29 : day_month[month])) < 0)
+      goto bad;
+  }
 get_time:
   if ((hour = getval(-2, 0, 23)) == -1) goto bad;
   if ((minute = getval(-2, 0, 59)) == -1) goto bad;
@@ -131,12 +149,13 @@ get_time:
   return ((int)(valptr - text) + 1);
 }
 
-static int getval(flag, low, high)
+static int getvalN(flag, low, high, n)
 int     flag;
 int     low;
 int     high;
+int     n;
 /*
- * Global valptr points to a 2-digit positive decimal integer.
+ * Global valptr points to a N-digit positive decimal integer.
  * Skip over leading non-numbers and return the value.
  * Return flag if text[0] == '\0'. Return -1 if the text is bad,
  * or if the value is out of the low:high range.
@@ -149,7 +168,7 @@ int     high;
   while (*valptr && (*valptr < '0' || *valptr > '9')) valptr++;
   if (*valptr == '\0') return(flag);        /* Default?             */
   /* The above allows for 78.04.22 format */
-  for (value = i = 0; i < 2; i++) {
+  for (value = i = 0; i < n; i++) {
     temp = *valptr++ - '0';
     if (temp < 0 || temp > 9) return(-1);
     value = (value*10) + temp;
@@ -157,3 +176,10 @@ int     high;
   return((value >= low && value <= high) ? value : -1);
 }
 
+static int getval(flag, low, high)
+int     flag;
+int     low;
+int     high;
+{
+  return getvalN(flag, low, high, 2);
+}

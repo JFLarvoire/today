@@ -13,9 +13,10 @@
 **   2019-01-14 JFL Changed sun() last argument to a struct tm.
 **		    Added option -d to dynamically enable the debug mode.
 **		    Added option -V to display the program version.
+**   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
 */
 
-#define VERSION "2019-01-14"
+#define VERSION "2019-11-01"
 
 #include <stdio.h>
 #include <string.h>
@@ -40,7 +41,7 @@ Options:\n\
   +N[:M]        Display time N hours and M minutes after sunset\n\
   -V|--version  Display the program version\n\
 \n\
-Date: YYYY-MM-DD, default: today\n\
+Date: YYYY-MM-DD or YYYY-DDD, with - optional, default: today\n\
 \n\
 ");
 }

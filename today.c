@@ -22,9 +22,10 @@
  *		    Added option -d to dynamically enable the debug mode.
  *   2019-01-14 JFL Changed sun() and moontx() last argument to a struct tm.
  *		    Added option -V to display the program version.
+ *   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
  */
 
-#define VERSION "2019-01-14"
+#define VERSION "2019-11-01"
 
 /*)BUILD	$(PROGRAM)	= today
 		$(FILES)	= { today datetx timetx nbrtxt moontx }
@@ -150,6 +151,7 @@ Options:\n\
 \n\
 Date:                   Prints the day, and optional time, in plain English.\n\
   YYYY-MM-DD[THH:MM:SS] ISO format. Ex: 2018-12-25T23:59 or \"2018-12-25 23h59m\"\n\
+                        The date can also be formatted as YYYY-DDD\n\
   [+CC]YYMMDD[HHMMSS]   Compacted ISO format.\n\
 \n\
 Default: Print date & time, today's sunrise & sunset, followed by a cookie.\n\

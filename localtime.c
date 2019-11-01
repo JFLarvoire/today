@@ -9,9 +9,10 @@
 **
 ** History:
 **   2019-01-20 JFL Created this program.
+**   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
 */
 
-#define VERSION "2019-01-20"
+#define VERSION "2019-11-01"
 
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +38,7 @@ Options:\n\
   -V|--version  Display the program version\n\
 \n\
 Date_time: [YYYY-MM-DD][T]HH:MM[:SS][Z], default: now, default date: today\n\
+           The date can also be formatted as YYYY-DDD\n\
            The optional Z suffix flags a GMT time\n\
 \n\
 ");

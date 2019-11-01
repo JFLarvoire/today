@@ -16,9 +16,10 @@
 **		    Added option -V to display the program version.
 **   2019-01-15 JFL Added the moon output as Ascii Art.
 **   2019-01-16 JFL Added option -i to output the moon on inverse video screens.
+**   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
 */
 
-#define VERSION "2019-01-16"
+#define VERSION "2019-11-01"
 
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +45,7 @@ Options:\n\
   -i|--inverse  It's an inverse video terminal (black text on white background)\n\
   -V|--version  Display the program version\n\
 \n\
-Date: YYYY-MM-DD, default: today\n\
+Date: YYYY-MM-DD or YYYY-DDD, with - optional, default: today\n\
 \n\
 ");
 }
