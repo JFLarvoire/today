@@ -14,9 +14,10 @@
 **		    Added option -d to dynamically enable the debug mode.
 **		    Added option -V to display the program version.
 **   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
+**   2019-11-03 JFL Added option -f to display the full date/time.
 */
 
-#define VERSION "2019-11-01"
+#define VERSION "2019-11-03"
 
 #include <stdio.h>
 #include <string.h>
@@ -26,6 +27,9 @@
 #include "include/debugm.h"
 
 #define streq(s1, s2) (!strcmp(s1, s2))
+
+#define FALSE 0
+#define TRUE 1
 
 int debug = 0;
 
@@ -39,6 +43,7 @@ Options:\n\
   -?            Display this help screen\n\
   -N[:M]        Display time N hours and M minutes before sunset\n\
   +N[:M]        Display time N hours and M minutes after sunset\n\
+  -f            Display the full date/time in the canonic ISO 8601 format\n\
   -V|--version  Display the program version\n\
 \n\
 Date: YYYY-MM-DD or YYYY-DDD, with - optional, default: today\n\
@@ -53,6 +58,7 @@ int main(int argc, char *argv[]) {
   struct tm stm;
   struct tm *ptm = NULL;
   int iErr;
+  int iFull = FALSE;
 
   for (i=1; i<argc; i++) {
     char *arg = argv[i];
@@ -66,6 +72,11 @@ int main(int argc, char *argv[]) {
     if (   streq(arg, "-d")	/* -d = Debug mode */
         || streq(arg, "--debug")) {
       debug = 1;
+      continue;
+    }
+    if (   streq(arg, "-f")	/* -f = Full date/time mode */
+        || streq(arg, "--full")) {
+      iFull = 1;
       continue;
     }
     if (   streq(arg, "-V")     /* -V: Display the version */
@@ -105,6 +116,15 @@ int main(int argc, char *argv[]) {
   }
   sunsh += nHours;
   
+  if (iFull) {
+    if (!ptm) {
+      time_t now;
+      time(&now);			/* get system time */
+      ptm = localtime(&now);		/* get ptr to gmt time struct */
+    }
+    printf("%04d-%02d-%02d ", ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday);
+  }
+
   printf("%02d:%02d\n", sunsh, sunsm);
 
   return(0);
