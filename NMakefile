@@ -6,6 +6,7 @@
 #
 # Changes:
 # 2018-12-26 JFL Output files into the bin/$(uname -s).$(uname -p)[/Debug] subdirectory.
+# 2019-11-11 JFL Added a (make release) target, to generate a binary release.
 #
 
 default: all
@@ -35,5 +36,123 @@ Targets:
   today.exe     Build $(OD)$$(OS)[\Debug]\today.exe
   sunrise.exe   Build $(OD)$$(OS)[\Debug]\sunrise.exe
   sunset.exe    Build $(OD)$$(OS)[\Debug]\sunset.exe
+  release       Generate a $(OD)today.zip binary release
   zip           Generate a $(OD)today.zip source release
+<<
+
+# Create a binary release
+release:
+    call <<"$(TMP)\today-release-$(PID).bat"
+	@echo off
+	setlocal EnableExtensions EnableDelayedExpansion
+	goto :main
+	
+	:msg
+	echo %*
+	$(MSG) %*
+	exit /b
+	
+	:exec
+	echo %*
+	%*
+	exit /b
+	
+	:main
+	set "EXEC=call :exec"
+	set "MSG=call :msg"
+	%MSG% Enumerating files available by category
+	
+	:# Select the output directory
+	set "CONFIG.H=config.%COMPUTERNAME%.h"
+	if not exist %CONFIG.H% set "CONFIG.H=config.h"
+	if exist %CONFIG.H% call %CONFIG.H%
+	if not defined OUTDIR (
+	  set "\OUTDIR=\bin"
+	) else if "%OUTDIR%"=="." (
+	  set "\OUTDIR="
+	) else (
+	  set "\OUTDIR=\%OUTDIR%"
+	)
+	
+	:# Set the output file name
+	set "ZIP=!CD!%\OUTDIR%\today.zip"
+	
+	:# Select the 32-bits programs directory to use.
+	for %%d in (WIN95 WINXP WIN32) do ( :# May be overriden by setting PROGRAMS_DIR before running make release.
+	  if not defined PROGRAMS_DIR if exist .%\OUTDIR%\%%d (
+	    pushd .%\OUTDIR%\%%d & set "PROGRAMS_DIR=!CD!" & popd
+	  )
+	)
+	if not exist "%PROGRAMS_DIR%" (%MSG% Error: Can't find the programs directory. & exit 1) &:# Also fails if it's not defined
+
+	:# Build the program list
+	set "QUIET_MAKE=1" &:# Tell All.mak, etc, to skip low priority information messages
+	set "PROGRAMS=today.exe sunrise.exe sunset.exe potm.exe localtime.exe"
+	:# Output the lists of programs that will be archived, per subdirectory
+	%MSG% Programs = (!PROGRAMS!)
+	if not defined PROGRAMS (%MSG% Error: Can't get the programs list. & exit 1)
+	
+	:# Rebuild a new zip file
+	set PATH=%PATH%;C:\Program Files\7-zip
+	if exist "%ZIP%" del "%ZIP%"
+	%MSG% Creating "%ZIP%"
+
+	:# Add 32-bits programs (from the selected dir in WIN95 WINXP WIN32)
+	%MSG% Adding WIN32 programs from %PROGRAMS_DIR%
+	pushd "%PROGRAMS_DIR%"
+	for %%p in ("%CD%") do set "WIN32=%%~nxp"
+	:# But some programs may not have been built, if the necessary libraries are missing.
+	set "ALL_PROGRAMS=%PROGRAMS%"
+	set "PROGRAMS="
+	set "PROGRAMS2="
+	for %%p in (%ALL_PROGRAMS%) do (
+	  if exist %%p (
+	    set "PROGRAMS=!PROGRAMS! %%p"
+	  ) else if exist "..\WIN32\%%~p" (
+	    %MSG% Warning: %WIN32%\%%p not found. Using that in WIN32 instead.
+	    set "PROGRAMS2=!PROGRAMS2! %%p"
+	  ) else (
+	    %MSG% Warning: %WIN32%\%%p not found
+	  )
+	)
+	if defined PROGRAMS (
+	  set "PROGRAMS=!PROGRAMS:~1!
+	  %EXEC% 7z.exe -- a "%ZIP%" !PROGRAMS!
+	  if errorlevel 1 exit /b
+	)
+	if defined PROGRAMS2 ( :# Add the missing ones from WIN32 if avail. there
+	  set "PROGRAMS2=!PROGRAMS2:~1!
+	  cd ..\WIN32
+	  %EXEC% 7z.exe -- a "%ZIP%" !PROGRAMS2!
+	  if errorlevel 1 exit /b
+	  )
+	popd
+	
+	:# Add DOS and WIN64 programs if they're available and not yet added
+	for %%o in (DOS IA64 WIN64 ARM ARM64) do (
+	  if exist .%\OUTDIR%\%%o\*.exe for %%d in ("%PROGRAMS_DIR%") do if /I "%%~nxd" NEQ "%%o" (
+	    pushd .%\OUTDIR%
+	    pushd %%o & set "PROGRAMS%%o_DIR=!CD!" & popd
+	    %MSG% Adding %%o programs from !PROGRAMS%%o_DIR!
+	    :# Some programs may not have been built, if the necessary libraries are missing.
+	    set "PROGRAMS%%o="
+	    for %%p in (%ALL_PROGRAMS%) do if exist %%o\%%p (
+	      set "PROGRAMS%%o=!PROGRAMS%%o! %%o\%%p"
+	    ) else (
+	      findstr /C:"no %%o version" "%CD%\SRC\%%~np.mak" >NUL 2>NUL || %MSG% Warning: %%p not found
+	    )
+	    if defined PROGRAMS%%o set "PROGRAMS%%o=!PROGRAMS%%o:~1!
+	    %EXEC% 7z.exe -- a "%ZIP%" !PROGRAMS%%o!
+	    if errorlevel 1 exit /b
+	    popd
+	  )
+	)
+
+	:# Add the doc files
+	%MSG% Adding README
+	%EXEC% 7z.exe a "%ZIP%" README.md
+	if errorlevel 1 exit /b
+	
+	:# Conclusion
+	%MSG% %ZIP% done
 <<
