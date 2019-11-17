@@ -7,6 +7,7 @@
 # Changes:
 # 2018-12-26 JFL Output files into the bin/$(uname -s).$(uname -p)[/Debug] subdirectory.
 # 2019-11-11 JFL Added a (make release) target, to generate a binary release.
+# 2019-11-17 JFL Added whereami.* scripts to the release file.
 #
 
 default: all
@@ -148,6 +149,13 @@ release:
 	  )
 	)
 
+	:# Add scripts
+	%MSG% Adding scripts from %CD%
+	for %%f in (WhereAmI.bat whereami.tcl) do (
+	  %EXEC% 7z.exe -- a "%ZIP%" %%f
+	  if errorlevel 1 exit /b
+	)
+	
 	:# Add the doc files
 	%MSG% Adding README
 	%EXEC% 7z.exe a "%ZIP%" README.md
