@@ -131,6 +131,7 @@
 #		    versions.						      #
 #    2019-03-18 JFL Fixed the DOS stub location, based on OUTDIR.	      #
 #    2019-11-03 JFL Removed /Zp from CFLAGS as this breaks new SDK 10 builds. #
+#    2019-11-13 JFL Added CXXFlags for C++ compilation.                       #
 #		    							      #
 #      © Copyright 2016-2018 Hewlett Packard Enterprise Development LP        #
 # Licensed under the Apache 2.0 license - www.apache.org/licenses/LICENSE-2.0 #
@@ -336,6 +337,8 @@ CFLAGS=$(CFLAGS) "/DPROGRAM_VER_H=$(PROGRAM).ver.h"
 RFLAGS=$(RFLAGS) "/DPROGRAM_VER_H=$(PROGRAM).ver.h"
 AFLAGS=$(AFLAGS) "/DPROGRAM_VER_H=$(PROGRAM).ver.h"
 !ENDIF
+
+CXXFLAGS=/EHsc $(CFLAGS)
 
 # Files and scripts used for compilation
 UTF8_BOM_FILE=$(O)\UTF8_BOM	# A file containing the UTF-8 Byte-Order Mark
@@ -563,7 +566,7 @@ SUBMAKE=$(MAKE) $(MAKEFLAGS_) /F "$(MAKEFILE)" $(MAKEDEFS) # Recursive call to t
     set INCLUDE=$(INCLUDE)
     set PATH=$(PATH)
     $(REMOVE_UTF8_BOM) $< $(O)\$(<F)
-    $(CC) $(CFLAGS) /c $(TC) $(O)\$(<F) || $(REPORT_FAILURE)
+    $(CC) $(CXXFLAGS) /c $(TC) $(O)\$(<F) || $(REPORT_FAILURE)
     $(MSG) ... done.
 
 # Inference rule for C compilation
