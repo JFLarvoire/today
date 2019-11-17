@@ -2,15 +2,17 @@
 
 A set of programs for computing and displaying various ephemeris times for today.
 
-| Program   | Description                            |
-| --------- | -------------------------------------- |
-| sunrise   | Display the sunrise time as HH:MM      |
-| sunset    | Display the sunset time as HH:MM       |
-| potm      | Display the Phase Of The Moon          |
-| today     | Display all the above in plain English |
-| localtime | Display the local time as HH:MM:SS     |
+| Program      | Description                                                                |
+| ------------ | -------------------------------------------------------------------------- |
+| sunrise      | Display the sunrise time as HH:MM, or as a very detailed string            |
+| sunset       | Display the sunset time as HH:MM, or as a very detailed string             |
+| potm         | Display the Phase Of The Moon                                              |
+| today        | Display all the above in plain English                                     |
+| localtime    | Display the local time as HH:MM:SS                                         |
+| WhereAmI.bat | Get system location information based on the IP address (Windows version)  |
+| whereami.tcl | Get system location information based on the IP address (Unix version)     |
 
-All programs accept an optional date/time argument, formatted as described below.
+All binary programs accept an optional date/time argument, formatted as described below.
 By default, they use the current date and time.
 
 * ISO 8601 format for date/time: [YYYY-MM-DD][T][HH[:MM[:SS]]][Z]
@@ -21,7 +23,7 @@ By default, they use the current date and time.
 * Shortened date format: [+YY]YYMMDD[HH[MM[SS]]]
    * This is the original format supported by today, with just numbers. Prepend a '+' if specifying the century.
 
-Use option -? or -h to display a detailed help screen for each program.
+All programs and scripts have an option -? or -h to display a detailed help screen.
 
 ### History
 
@@ -44,6 +46,76 @@ Updated in 2019 by Jean-François Larvoire, based on the 2009 version. Changes v
 * The potm program now also draws the moon crescent using ASCII art.
 * Moved the date/time parsing routine from today.c to new file parsetime.c, and use it for all programs.
 * Added a localtime program, to test date/time parsing improvements, and convert GMT time to local time.
+* Added a configuration system (see below), and whereami.* scripts for automatically initializing it.
+
+### Location configuration system
+
+The initial programs had to be modified and rebuilt for use in a different location.  
+This is still possible by modifying the constants defined in params.h.
+But obviously this is very inconvenient.
+
+The 2019 versions support location configuration files, and environment strings.
+The programs search for the first location information file, in the following order:
+
+1. In the user location file ("~/.location" for Unix, or "%USERPROFILE%\\location.inf" for Windows)
+2. In the system location file ("/etc/location.conf" for Unix, or "%windir%\\location.inf" for Windows)
+3. In the built-in constants from param.h.
+
+| Variable definition example  | Description                               |
+| ---------------------------- | ----------------------------------------- |
+| LATITUDE = 37.787954         | Latitude. +=North. Required.              |
+| LONGITUDE = -122.407498      | Longitude. +=East. Required.              |
+| CITY = San Francisco         | City name. Required.                      |
+| TZABBR = PST                 | Time Zone Abbreviation. Required.         |
+| DSTZABBR = PDT               | TZ DST Abbreviation. Required if exists.  |
+| COUNTRYCODE = US             | Two-letter country code. Optional.        |
+| COUNTRYNAME = United States  | Country name. Optional.                   |
+| REGIONCODE = CA              | Region or state code. Optional.           |
+
+Notes:
+
+* The = sign is optional
+* Anything beginning with # or // is a comment, and is ignored by the programs.
+
+Finally, if environment variables are defined, they override the values found in the configuration files above.
+
+The easiest way to initialize a configuration file is to use the whereami.* script for your system.
+
+### whereami.* scripts
+
+These scripts use a web service API to get location information based on the system IP address.
+So they work only if the system is connected to the Internet.
+
+#### Windows:
+
+* Open a command prompt running as Administrator
+* Run `whereami.bat` to see the location information.
+* Run `whereami.bat -s` to write that location information into "%windir%\\location.inf".
+
+If you don't have administration rights:
+* Open a normal command prompt
+* Run `whereami.bat` to see the location information.
+* Run `whereami.bat -u` to write that location information into "%USERPROFILE%\\location.inf".
+
+#### Unix
+
+* Open a command shell.
+* Run `chmod +x whereami.tcl` to make sure whereami.tcl is executable.
+* Run `./whereami.tcl` to see the location information.
+* Run `sudo "$PWD/whereami.tcl" -s` to write that location information into "/etc/location.conf".
+
+If you don't have root rights:
+* Run `./whereami.tcl -u` to write that location information into "~/.location".
+
+#### Precision of the location information
+
+In most cases, the web service API will not report your actual location, but that of your ISP.  
+If you're running a whereami script in an intranet within a large organization, you might get the location
+of the place where your intranet is connected to the Internet... Which might be in a very distant city!  
+So on a laptop, it is recommended to run the `whereami -s` script from home rather that from work.
+
+For best precision, pinpoint your place in Google maps, then manually update the latitude, longitude, and city name
+in the configuration file generated by the whereami.* script.
 
 
 ## Build procedure
@@ -92,6 +164,8 @@ If you have MSVC 1.5 installed, a 16-bits version for MS-DOS will also be built 
 Copy the executables into a tools directory listed in your PATH. Use C:\Windows if you don't know which directory to use.
 Ex: `copy bin\WIN32\*.exe %windir%`
 
+To build a release for uploading on GitHub, run: `make.bat release`
+
 ### For MS-DOS with Microsoft tools
 
 You'll need Microsoft Visual C++ 1.52c.  
@@ -122,3 +196,5 @@ The files in the include subdirectory come from the [SysToolsLib](https://github
 library [include files](https://github.com/JFLarvoire/SysToolsLib/tree/master/C/include),
 and are licensed under the Apache 2 license.
 
+The whereami.* scripts use time zone information extracted from Boost's [date_time_zonespec.csv](https://github.com/boostorg/date_time/blob/master/data/date_time_zonespec.csv),
+See Boost license at https://github.com/boostorg/date_time/blob/develop/LICENSE

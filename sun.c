@@ -5,19 +5,30 @@
 *        options:        -t hh:mm:ss	time (default is current system time)
 *			 -d mm/dd/yy	date (default is current system date)
 *                        -a lat		decimal latitude (default = 45.5333)
-*                        -o lon		decimal longitude (default = 122.8333) 
+*                        -o lon		decimal longitude (default = 122.8333)
 *			 -z tz		timezone (default = 8, pst)
 *			 -p		show position of sun (azimuth)
 *			 -v		turn on debugging
-*        
-*        All output is to standard io.  
+*
+*        All output is to standard io.
 *
 *	 Compile with cc -O -o sun sun.c -lm
 *	 Non 4.2 systems may have to change <sys/time.h> to <time.h> below.
-*	(yes, done)
+*	 (yes, done)
 *
-*	 Note that the latitude, longitude, time zone correction and
-*	 time zone string are all defaulted in the global variable section.
+*	 Note that the latitude, longitude, time zone correction, and time zone
+*	 string are all defaulted in the global variable section in params.h.
+*        They can be overridden by the following settings in "~/.location":
+*          LATITUDE = 37.787954                # Latitude. +=North. Required.
+*          LONGITUDE = -122.407498             # Longitude. +=East. Required.
+*          CITY = San Francisco                # City name. Required.
+*          TZABBR = PST                        # Time Zone Abbreviation. Required.
+*          DSTZABBR = PDT                      # TZ DST Abbreviation. Required if exists.
+*          COUNTRYCODE = US                    # Two-letter country code. Optional.
+*          COUNTRYNAME = United States         # Country name. Optional.
+*          REGIONCODE = CA                     # Region or state code. Optional.
+*        Caution: The longitude in the configuration file (+=east) is inverted
+*        compared to the one used internally in this program (+=west).
 *
 *	 Most of the code in this program is adapted from algorithms
 *	 presented in "Practical Astronomy With Your Calculator" by
@@ -35,6 +46,9 @@
 *		    Made other minor output format improvements also.
 *    2019-01-11 JFL Added optional argument pszDate to routine sun().
 *		    Include stptime.c when building with Microsoft tools.
+*    2019-11-15 JFL Added a config file in "~/.location".
+*    2019-11-17 JFL Manage a system config file, and a user config file.
+*                   And allow overriding it with environment values.
 */
 
 #include <stdio.h>
@@ -42,6 +56,21 @@
 #include <sys/types.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+#if defined(_MSC_VER) && defined(_MSDOS)
+#include <io.h>	/* For access() */
+#ifndef F_OK
+#define F_OK 0
+#endif
+#endif
+
+#if defined(_MSC_VER)
+#define strcasecmp _strcmpi
+#else
+#include <strings.h>
+#endif
 
 #include "params.h"
 #include "today.h"
@@ -85,17 +114,74 @@ int day;
 int yr;
 
 int tz = TZ;			/* Default time zone */
-char *tzs  = TZS;		/* Default time zone string */
-char *dtzs = DTZS;		/* Default daylight savings time string */
+char tzs[8]  = TZS;		/* Default time zone string */
+char dtzs[8] = DTZS;		/* Default daylight savings time string */
 
 double lat = LAT;		/* Default latitude */
-double lon = LON;		/* Default Longitude */ 
+double lon = LON;		/* Default Longitude */
+char city[256] = CITY;		/* City name*/
 
 int popt = 0;
 
-void sun(sunrh, sunrm, sunsh, sunsm, pt)
+/* Directory separator */
+#if defined(_MSDOS) || defined(_WIN32) || defined(_OS2)
+  char sep = '\\';
+  char *systemFile = "location.inf";
+  char *userFile = "location.inf";
+#else
+  char sep = '/';
+  char *systemFile = "location.conf";
+  char *userFile = ".location";
+#endif
+
+/* Get the default configuration files names */
+char *defaultSysConfFile(char *buf, size_t bufsize) {
+#if defined(_MSDOS)
+  /* Put the configuration file on the system drive */
+  char *etc = "A:";
+  char *comspec = getenv("COMSPEC");
+  if (comspec && comspec[0] && (comspec[1] == ':')) etc[0] = comspec[0];
+#elif defined(_WIN32)
+  char *etc = getenv("windir");
+  if (!etc) etc = "C:\\Windows";
+#else /* Unix */
+  char *etc = "/etc";
+#endif
+  if ((etc) && (bufsize > (strlen(etc)+1+strlen(systemFile)))) {
+    sprintf(buf, "%s%c%s", etc, sep, systemFile);
+    return buf;
+  }
+  return NULL;
+}
+
+char *defaultUserConfFile(char *buf, size_t bufsize) {
+  char *home = getenv("HOME");
+#if defined(_MSDOS) /* MS-DOS does not have a per-user configuration directory */
+  if (!home) {
+    home = getenv("INIT"); /* Sometimes this is used instead */
+    if (home && !access(home, F_OK)) home = NULL; /* It's not an accessible directory */
+  }
+#elif defined(_WIN32)
+  if (!home) home = getenv("USERPROFILE"); /* Windows' standard equivalent of $HOME */
+#endif /* defined(_WIN32) */
+  if ((home) && (bufsize > (strlen(home)+strlen(userFile)+1))) {
+    sprintf(buf, "%s%c%s", home, sep, userFile);
+    return buf;
+  }
+  return NULL;
+}
+
+/* Copy a string, and make sure the copy ends with a NUL even if the buffer is too small */
+char *strncpyz(char *s1, const char *s2, size_t n) {
+  char *result = strncpy(s1, s2, n);
+  s1[n-1] = '\0'; /* Make sure there's always a NUL at the end of the copy */
+  return result;
+}
+
+int sun(sunrh, sunrm, sunsh, sunsm, pt, pFile)
 int *sunrh, *sunrm, *sunsh, *sunsm;
 struct tm *pt;
+char *pFile;
 {
     double ed, jd;
     double alpha1, delta1, alpha2, delta2, st1r, st1s, st2r, st2s;
@@ -105,9 +191,87 @@ struct tm *pt;
     double alt, az, gst, m1;
     double hsm, ratio;
     int h, m;
-    
+    char nameBuf[256] = "";
+    char buf[1024];
+    char rc[8] = "";		/* Region code */
+    char cc[8] = "";		/* Country code */
+    char country[128] = "";	/* Country name */
+    char *pValue;
+
     if (debug) printf("sun(%p, %p, %p, %p, %p);\n",
       			sunrh, sunrm, sunsh, sunsm, pt);
+
+    /* Check if we have a config file with location information */
+    if (!pFile) pFile = defaultUserConfFile(nameBuf, sizeof(nameBuf));
+    if (!pFile) pFile = defaultSysConfFile(nameBuf, sizeof(nameBuf));
+    if (pFile) {
+      FILE *f;
+      if (debug) printf("Opening \"%s\"\n", pFile);
+      f = fopen(pFile, "r");
+      if (f) { /* The ~/.location configuration file exists */
+	while ((fgets(buf, sizeof(buf), f))) { /* Parse every line in the file */
+	  char *tag = strtok(buf, " \t=");
+	  char *value;
+	  int i, j, l;
+	  char *pc;
+	  if (!tag) continue;
+	  value = tag + strlen(tag) + 1;
+	  /* Remove underscores in tag, because the JSon API has some, whereas the XML api does not */
+	  for (i=j=0; j<(int)strlen(tag); j++) if (tag[j] != '_') tag[i++] = tag[j];
+	  tag[i] = '\0';
+	  /* Skip spaces and = to find the beginning of the value */
+	  while (*value == ' ' || *value == '\t' || *value == '=') value ++;
+	  if ((pc = strchr(value, '#')) != 0) *pc = '\0';	/* Remove # comments */
+	  if ((pc = strstr(value, "//")) != 0) *pc = '\0';	/* Remove // comments */
+	  for (l=(int)strlen(value); l>0; l--) {
+	    if (!strchr(" \t\r\n", value[l-1])) break; /* This is the last valid character in value */
+	  }
+	  value[l] = '\0';
+	  if (debug) printf("Read %s = \"%s\"\n", tag, value);
+	  if (!strcasecmp(tag, "LATITUDE")) {
+	    sscanf(value, "%lf", &lat);
+	  } else if (!strcasecmp(tag, "LONGITUDE")) {
+	    if (sscanf(value, "%lf", &lon)) lon = -lon; /* Longitudes are inverted! */
+	  } else if (!strcasecmp(tag, "CITY")) {
+	    strncpyz(city, value, sizeof(city));
+	  } else if (!strcasecmp(tag, "REGIONCODE")) {
+	    strncpyz(rc, value, sizeof(rc));
+	  } else if (!strcasecmp(tag, "COUNTRYCODE")) {
+	    strncpyz(cc, value, sizeof(cc));
+	  } else if (!strcasecmp(tag, "COUNTRYNAME")) {
+	    strncpyz(country, value, sizeof(country));
+	  } else if (!strcasecmp(tag, "TZABBR")) {
+	    strncpyz(tzs, value, sizeof(tzs));
+	  } else if (!strcasecmp(tag, "DSTZABBR")) {
+	    strncpyz(dtzs, value, sizeof(dtzs));
+	  }
+	}
+	fclose(f);
+      } else if (pFile != nameBuf) { /* The user-specified file can't be read */
+      	fprintf(stderr, "Error: %s: \"%s\"\n", strerror(errno), pFile);
+      	return 1;
+      } /* Else if (pFile == nameBuf) then use the default values from params.h */
+    }
+
+    /* Check if we have environment variables to override that */
+    if ((pValue = getenv("LATITUDE")) != 0)      sscanf(pValue, "%lf", &lat);
+    if ((pValue = getenv("LONGITUDE")) != 0) if (sscanf(pValue, "%lf", &lon)) lon = -lon; /* Longitudes are inverted! */
+    if ((pValue = getenv("CITY")) != 0)        strncpyz(city, pValue, sizeof(city));
+    if ((pValue = getenv("REGIONCODE")) != 0)  strncpyz(rc, pValue, sizeof(rc));
+    if ((pValue = getenv("COUNTRYCODE")) != 0) strncpyz(cc, pValue, sizeof(cc));
+    if ((pValue = getenv("COUNTRYNAME")) != 0) strncpyz(country, pValue, sizeof(country));
+    if ((pValue = getenv("TZABBR")) != 0)      strncpyz(tzs, pValue, sizeof(tzs));
+    if ((pValue = getenv("DSTZABBR")) != 0)    strncpyz(dtzs, pValue, sizeof(dtzs));
+
+    if (!strcasecmp(cc, "US")) {
+      if (*rc) {
+	sprintf(city+strlen(city), ", %s, USA", rc);
+      } else {
+	strcat(city, ", USA");
+      }
+    } else {
+      if (*country) sprintf(city+strlen(city), ", %s", country);
+    }
 
     if (!pt) {	/* If we were given no date, use now */
 	time_t sec_1970;	/* used by time calls */
@@ -124,7 +288,6 @@ struct tm *pt;
     day = pt->tm_mday;
     if (pt->tm_isdst) {		/* convert tz to daylight savings time */
 	tz--;
-	tzs = dtzs;	
     }
 
     if (debug)
@@ -217,8 +380,8 @@ struct tm *pt;
     if (popt) {
         dh_to_hm(as + da, &h, &m);
         printf("Azimuth: %3d %02d'\n", h, m);
-    } 
-     
+    }
+
 
     if (popt) {
 
@@ -226,7 +389,7 @@ struct tm *pt;
 	    alpha = (alpha1 + alpha2) / 2.0;
 	else
 	    alpha = (alpha1 + 24.0 + alpha2) / 2.0;
-	
+
 	if (alpha > 24.0)
 	    alpha -= 24.0;
 
@@ -249,6 +412,7 @@ struct tm *pt;
 	dh_to_hm (alt, &h, &m);
 	printf	 ("Altitude: %3d %02d'\n", h, m);
     }
+    return 0;
 }
 
 #if defined(_MSC_VER) && (_MSC_VER < 1400)
@@ -265,29 +429,29 @@ double deg;
 }
 
 
-double 
+double
 adj360(deg)
 double deg;
 {
-    while (deg < 0.0) 
+    while (deg < 0.0)
 	deg += 360.0;
     while (deg > 360.0)
 	deg -= 360.0;
     return(deg);
 }
 
-double 
+double
 adj24(hrs)
 double hrs;
 {
-    while (hrs < 0.0) 
+    while (hrs < 0.0)
 	hrs += 24.0;
     while (hrs > 24.0)
 	hrs -= 24.0;
     return(hrs);
 }
 
-double 
+double
 julian_date(m, d, y) int m, d, y;
 {
     long a, b;
@@ -307,13 +471,13 @@ julian_date(m, d, y) int m, d, y;
     b += (long)(30.6001 * ((double)m + 1.0));
     jd = (double)d + (double)b + 1720994.5;
 
-    if (debug) 
+    if (debug)
 	printf("Julian date for %d/%d/%d is %lf \n", m, d, y, jd);
 
     return(jd);
 }
 
-double 
+double
 hms_to_dh(h, m, s) int h, m, s;
 {
     double rv;
@@ -325,7 +489,7 @@ hms_to_dh(h, m, s) int h, m, s;
     return rv;
 }
 
-double 
+double
 solar_lon(ed)
 double ed;
 {
@@ -337,32 +501,32 @@ double ed;
     m = adj360(m);
     m = dtor(m);
     e = m; ect = 0.016718;
-    while ((errt = e - ect * sin(e) - m) > 0.0000001) 
+    while ((errt = e - ect * sin(e) - m) > 0.0000001)
         e = e - errt / (1 - ect * cos(e));
     v = 2 * atan(1.0168601 * tan(e/2));
     v = adj360(v * 180.0 / PI + 282.596403);
 
     if (debug)
-	printf("Solar Longitude for %lf days is %lf \n", ed, v); 
+	printf("Solar Longitude for %lf days is %lf \n", ed, v);
 
     return(v);
 }
 
-double 
+double
 acos_deg(x)
 double x;
 {
     return rtod(acos(x));
 }
 
-double 
+double
 asin_deg(x)
 double x;
 {
     return rtod(asin(x));
 }
 
-double 
+double
 atan_q_deg(y,x)
 double y,x;
 {
@@ -386,21 +550,21 @@ double x;
     return rtod(atan(x));
 }
 
-double 
+double
 sin_deg(x)
 double x;
 {
     return sin(dtor(x));
 }
 
-double 
+double
 cos_deg(x)
 double x;
 {
     return cos(dtor(x));
 }
 
-double 
+double
 tan_deg(x)
 double x;
 {
@@ -471,7 +635,7 @@ int *h, *m;
     if (t0 < 0.0)
 	t0 += 24;
     gmt = gst-t0;
-    if (gmt<0) 
+    if (gmt<0)
 	gmt += 24.0;
     gmt = gmt * 0.99727 - tz;;
     if (gmt < 0)
@@ -486,9 +650,9 @@ int *h, *m;
     double tempsec;
 
     *h = (int)dh;
- /* *m = (dh - *h) * 60; 
+ /* *m = (dh - *h) * 60;
     tempsec = (dh - *h) * 60 - *m; */
-    *m = (int)(fmod(dh, 1.0) * 60.0); 
+    *m = (int)(fmod(dh, 1.0) * 60.0);
     tempsec = fmod(dh, 1.0) * 60.0 - *m;
     tempsec = tempsec * 60 + 0.5;
     if (tempsec > 30.0)
@@ -526,7 +690,7 @@ double *alt, *az;
     }
     c2 = cos(b) * sin(d) - sin(b) * cos(d) * cos(t5);
     s2 = -cos(d) * sin(t5);
-    if (c2 == 0) 
+    if (c2 == 0)
 	a = (s2/fabs(s2)) * (p/2);
     else {
 	a = atan(s2/c2);
@@ -553,7 +717,7 @@ double j,f;
     t1 = floor(t);
     j0 = t1 * 36525.0 + 2451545.0;
     t2 = (j - j0 + 0.5)/36525.0;
-    s = 24110.54841 + 184.812866 * t1; 
+    s = 24110.54841 + 184.812866 * t1;
     s += 8640184.812866 * t2;
     s += 0.093104 * t * t;
     s -= 0.0000062 * t * t * t;
@@ -570,4 +734,3 @@ double j,f;
 
     return(s);
 }
-

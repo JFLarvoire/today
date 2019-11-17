@@ -124,8 +124,11 @@ int     daylight;                       /* Non-zero if savings time     */
 		op = nbrtxt(op, hour, 0);
 		op = copyst(op, (late) ? " PM" : " AM");
 	}
-	if (daylight != -1) 
-	    op = copyst(op, (daylight) ? DTZS : TZS); /* See config.h */
+	if (daylight != -1) {
+	    op = copyst(op, " (");
+	    op = copyst(op, (daylight) ? dtzs : tzs); /* See today.h */
+	    op = copyst(op, ")");
+	}
 	return(op);
 }
 

@@ -23,9 +23,12 @@
  *   2019-01-14 JFL Changed sun() and moontx() last argument to a struct tm.
  *		    Added option -V to display the program version.
  *   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
+ *   2019-11-16 JFL Added option -v display the place name and full date/time.
+ *                  Added option -c to set the config file name.
+ *   2019-11-17 JFL Added system & user config files, and environment variables.
  */
 
-#define VERSION "2019-11-01"
+#define VERSION "2019-11-17"
 
 /*)BUILD	$(PROGRAM)	= today
 		$(FILES)	= { today datetx timetx nbrtxt moontx }
@@ -122,6 +125,7 @@ int	quiet;				/* Quiet mode flag		*/
 int     lineWidth = LINEWIDTH;		/* Output width			*/
 static	char    outline[500];		/* Output buffer                */
 int     debug = 0;
+static  char *pszCfgFile = NULL;
 
 /* Forward references to local routines */
 void dotime(void);
@@ -133,6 +137,16 @@ int getLine(void);
 
 
 void usage() {
+  char namebuf[256];
+  char *pName = defaultSysConfFile(namebuf, sizeof(namebuf));
+#if !defined(_MSDOS)
+  char namebufU[256];
+  char *pNameU = defaultUserConfFile(namebufU, sizeof(namebufU));
+  if (pNameU) {
+    strcat(pName, " or ");
+    strcat(pName, pNameU);
+  }
+#endif
   printf("\
 today - Driver for time routines\n\
 \n\
@@ -141,10 +155,11 @@ Usage: today [OPTIONS] [DATE [...]]\n\
 Options:\n\
   -?|-h|--help          Display this help screen\n\
   -a                    Print all details. Implies -m and -s\n\
+  -c PATHNAME           Configuration file name. Default: See below\n\
   -m                    Also print the moon phase\n\
   -p|p|P                Polish joke mode\n\
   -q                    Quiet mode. Print just the bare date\n\
-  -s|s|S                Also print sunrise and sunset\n\
+  -v|-s|s|S             Also print sunrise and sunset\n\
   -V                    Display the program version\n\
   -w WIDTH              Set the line width. 0=unlimited. Default=Screen width\n\
   -|-x|x|X              Dates are read from the standard input\n\
@@ -156,7 +171,26 @@ Date:                   Prints the day, and optional time, in plain English.\n\
 \n\
 Default: Print date & time, today's sunrise & sunset, followed by a cookie.\n\
 \n\
-");
+Configuration file: This program has built-in settings for %s.\n\
+This can be overridden by creating a configuration file w. these definitions:\n\
+LATITUDE = 37.787954                # Latitude. +=North. Required.\n\
+LONGITUDE = -122.407498             # Longitude. +=East. Required.\n\
+CITY = San Francisco                # City name. Required.\n\
+TZABBR = PST                        # Time Zone Abbreviation. Required.\n\
+DSTZABBR = PDT                      # TZ DST Abbreviation. Required if exists.\n\
+COUNTRYCODE = US                    # Two-letter country code. Optional.\n\
+COUNTRYNAME = United States         # Country name. Optional.\n\
+REGIONCODE = CA                     # Region or state code. Optional.\n\
+Default file names: %s\n\
+Recommended: Use whereami.bat (Windows) or whereami.tcl (Unix) to generate them\n\
+automatically. In both cases, run 'whereami -?' to get help.\n\
+All the above can be overridden with environment variables with the same names.\n\
+"
+#ifdef __unix__
+"\n"
+#endif
+, city, pName);
+
 }
 
 
@@ -184,7 +218,9 @@ char    *argv[];
     char cArg = arg[0];
     if (cArg) cArg |= '\x20';	/* Convert the first arg letter to lower case */
     if (   streq(arg, "-?")
+#if defined(_MSDOS) || defined(_WIN32)
         || streq(arg, "/?")
+#endif
         || streq(arg, "-h")
         || streq(arg, "--help")
         ) {
@@ -198,6 +234,10 @@ char    *argv[];
       if (cOpt == 'a') {	/* -a = Display all available information */
 	sunrise = 1;
 	moon = 1;
+	continue;
+      }
+      if ((cOpt == 'c') && ((i+1)<argc)) {	/* -c = Config file name */
+	pszCfgFile = argv[++i];
 	continue;
       }
       if (cOpt == 'd') {	/* -d = Debug mode */
@@ -222,7 +262,13 @@ optionS:
 	sunrise = 1;
 	continue;
       }
-      if (cOpt == 'v') {	/* -V: Display the version */
+      if (   streq(opt, "v")	/* -v = Verbose mode */
+	  || streq(opt, "-verbose")) {
+	sunrise = 1;
+	continue;
+      }
+      if (   streq(opt, "-V")   /* -V: Display the version */
+	  || streq(opt, "--version")) {
 	printf(VERSION " " EXE_OS_NAME "\n");
 	return 0;
       }
@@ -355,7 +401,9 @@ struct tm *ptm;
   if (hour >= 0 || minute >= 0 || second >= 0) output(".\n");
   if (sunrise) {
     int sunrh, sunrm, sunsh, sunsm;
-    sun(&sunrh, &sunrm, &sunsh, &sunsm, ptm);
+    int iErr = sun(&sunrh, &sunrm, &sunsh, &sunsm, ptm, pszCfgFile);
+    if (iErr) return;
+    printf("In %s,\n", city);
     output("Sunrise is at ");
     timetxt(outline, sunrh, sunrm, -2, -1);
     output(outline);
