@@ -17,9 +17,10 @@
 **   2019-01-15 JFL Added the moon output as Ascii Art.
 **   2019-01-16 JFL Added option -i to output the moon on inverse video screens.
 **   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
+**   2019-11-17 JFL Added option /? for Windows.
 */
 
-#define VERSION "2019-11-01"
+#define VERSION "2019-11-17"
 
 #include <stdio.h>
 #include <string.h>
@@ -60,6 +61,9 @@ int main(int argc, char *argv[]) {
 
   for (i=1; i<argc; i++) {
     char *arg = argv[i];
+#if defined(_MSDOS) || defined(_WIN32)
+    if (streq(arg, "/?")) arg[0] = '-';
+#endif
     if (arg[0] == '-') { /* This is an option */
       char *opt = arg+1;
       if (   streq(opt, "?")
