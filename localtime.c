@@ -11,9 +11,10 @@
 **   2019-01-20 JFL Created this program.
 **   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
 **   2019-11-03 JFL Added option -f to display the full date/time.
+**   2019-11-17 JFL Added option /? for Windows.
 */
 
-#define VERSION "2019-11-03"
+#define VERSION "2019-11-17"
 
 #include <stdio.h>
 #include <string.h>
@@ -36,9 +37,9 @@ localtime - Display the local time\n\
 Usage: localtime [OPTIONS] [DATE_TIME]\n\
 \n\
 Options:\n\
-  -?            Display this help screen\n\
-  -f            Display the full date/time in the canonic ISO 8601 format\n\
-  -V|--version  Display the program version\n\
+  -?|-h|--help    Display this help screen\n\
+  -f              Display the full date/time in the canonic ISO 8601 format\n\
+  -V|--version    Display the program version\n\
 \n\
 Date_time: [YYYY-MM-DD][T]HH:MM[:SS][Z], default: now, default date: today\n\
            The date can also be formatted as YYYY-DDD\n\
@@ -57,6 +58,9 @@ int main(int argc, char *argv[]) {
   for (i=1; i<argc; i++) {
     char *arg = argv[i];
     if (   streq(arg, "-?")
+#if defined(_MSDOS) || defined(_WIN32)
+        || streq(arg, "/?")
+#endif
         || streq(arg, "-h")
         || streq(arg, "--help")
         ) {
