@@ -49,22 +49,29 @@
 *    2019-11-15 JFL Added a config file in "~/.location".
 *    2019-11-17 JFL Manage a system config file, and a user config file.
 *                   And allow overriding it with environment values.
+*    2019-11-18 JFL Fix access bug.
 */
 
 #include <stdio.h>
 #include <math.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#if defined(_MSC_VER) && defined(_MSDOS)
-#include <io.h>	/* For access() */
-#ifndef F_OK
-#define F_OK 0
+#if defined(_MSC_VER)
+#include <io.h>		/* For _access() */
+#define access _access
+#ifndef R_OK
+#define R_OK 4
 #endif
+#elif defined(__unix__)
+#include <unistd.h>	/* For access() */
 #endif
+
+#define accessible(pathname, mode) (access(pathname, mode) == 0)
 
 #if defined(_MSC_VER)
 #define strcasecmp _strcmpi
@@ -134,6 +141,13 @@ int popt = 0;
   char *userFile = ".location";
 #endif
 
+/* Check if a path refers to an existing directory */
+int isDir(const char* const path) {
+  struct stat s;
+  if (stat(path, &s)) return 0; /* stat failed => pathname invalid */
+  return ((s.st_mode & S_IFDIR) != 0);
+}
+
 /* Get the default configuration files names */
 char *defaultSysConfFile(char *buf, size_t bufsize) {
 #if defined(_MSDOS)
@@ -159,7 +173,7 @@ char *defaultUserConfFile(char *buf, size_t bufsize) {
 #if defined(_MSDOS) /* MS-DOS does not have a per-user configuration directory */
   if (!home) {
     home = getenv("INIT"); /* Sometimes this is used instead */
-    if (home && !access(home, F_OK)) home = NULL; /* It's not an accessible directory */
+    if (home && !isDir(home)) home = NULL; /* It's not an accessible directory */
   }
 #elif defined(_WIN32)
   if (!home) home = getenv("USERPROFILE"); /* Windows' standard equivalent of $HOME */
@@ -202,8 +216,16 @@ char *pFile;
       			sunrh, sunrm, sunsh, sunsm, pt);
 
     /* Check if we have a config file with location information */
-    if (!pFile) pFile = defaultUserConfFile(nameBuf, sizeof(nameBuf));
-    if (!pFile) pFile = defaultSysConfFile(nameBuf, sizeof(nameBuf));
+    if (!pFile) {
+      pFile = defaultUserConfFile(nameBuf, sizeof(nameBuf));
+      if (debug) printf("Trying \"%s\"\n", pFile);
+      if (pFile && !accessible(pFile, R_OK)) pFile = NULL;
+    }
+    if (!pFile) {
+      pFile = defaultSysConfFile(nameBuf, sizeof(nameBuf));
+      if (debug) printf("Trying \"%s\"\n", pFile);
+      if (pFile && !accessible(pFile, R_OK)) pFile = NULL;
+    }
     if (pFile) {
       FILE *f;
       if (debug) printf("Opening \"%s\"\n", pFile);
