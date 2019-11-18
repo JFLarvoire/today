@@ -34,10 +34,11 @@
 *    2019-11-16 JFL Added the DB of time zone names, and set TZABBR, DSTZABBR.*
 *    2019-11-17 JFL Added options -s & -u to write respectively a system      *
 *		    configuration file, and a user configuration file.        *
+*    2019-11-18 JFL Avoid using the eval function.			      *
 *                                                                             *
 \*****************************************************************************/
 
-var VERSION = "2018-11-17" // Version string displayed by the -V | --version option
+var VERSION = "2018-11-18" // Version string displayed by the -V | --version option
 
 // Many functions in this module use these options by default:
 defaultOptions = {verbose:false, debug:0};
@@ -797,8 +798,6 @@ function GetLocation(options) {
 // var isCLI = !module.parent;
 // var isCLI = require.main === module;
 if ((typeof module == 'undefined') || !module.parent) {
-    var AppID = 6;   // Unique application ID allocated for  scripts
-    var Meta = '{"agent":".php"}';
 
     // Test if an argument is a switch or not
     function isSwitch(arg) {
@@ -839,9 +838,7 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
 
     // Process command-line arguments, and run the requested commands
     function main(argc, argv) {
-        var appID = AppID;
         var options = defaultOptions;
-        var meta = Meta;
         var action = 'list';
         var api = 'xml';
 
@@ -895,7 +892,7 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
         }
         // Run the requested action
         result = GetLocation();
-        
+
         switch (action) { // Merge the following two into a single "save" action
         case 'system':
 	    var shell = new ActiveXObject("WScript.Shell");
@@ -912,20 +909,19 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
 	    action = "save";
 	    break;
         }
-        
+
         switch (action) { // Merge the following two into a single "list" action
         case 'list':
-	    var outProc = "WScript.Echo";
+	    var ts = WScript.StdOut;	// Output Text Stream = stdout
 	    break;
-        case 'save':
+        case 'save':			// Create an fso Text Stream object
 	    WScript.Echo("Writing location data to \"" + filename + "\"");
 	    var fso = new ActiveXObject("Scripting.FileSystemObject");
 	    var ts = fso.CreateTextFile(filename, true);
-	    var outProc = "ts.WriteLine";
 	    action = "list";
 	    break;
         }
-        
+
         switch (action) {
         case 'dump':
 	    WScript.Echo(LocationApi('/xml/', options));
@@ -934,14 +930,14 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
 	  for (var v in result) {
 	    var tag = v.toUpperCase();
 	    var value = result[v];
-	    eval(outProc + "(\"" + tag + " = " + value + "\")");
+	    ts.WriteLine(tag + " = " + value);
 	    if (tag == "TIMEZONE") {
 	      var abbrs = GetTZAbbrs(value);
-	      eval(outProc + "(\"TZABBR = " + abbrs[0] + "\")");
-	      eval(outProc + "(\"DSTABBR = " + abbrs[1] + "\")");
+	      ts.WriteLine("TZABBR = " + abbrs[0]);
+	      ts.WriteLine("DSTABBR = " + abbrs[1]);
 	    }
 	  }
-	  if (outProc == "ts.WriteLine") ts.Close();
+	  if (ts != WScript.StdOut) ts.Close();
 	  break;
         }
         return 0;
