@@ -35,6 +35,7 @@
 *    2019-11-17 JFL Added options -s & -u to write respectively a system      *
 *		    configuration file, and a user configuration file.        *
 *    2019-11-18 JFL Avoid using the eval function.			      *
+*                   Added option -X | --noexec for a no-execute mode.         *
 *                                                                             *
 \*****************************************************************************/
 
@@ -841,6 +842,7 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
         var options = defaultOptions;
         var action = 'list';
         var api = 'xml';
+        var noexec = false;
 
         for (i=1; i < argc; i++) {
             var arg = argv[i];
@@ -879,6 +881,11 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
 		    action = 'dump';
                     api = 'xml';
                     continue;
+                case 'X':       // no-exec mode
+                case '-noexec':
+		    noexec = true;
+                    api = 'xml';
+                    continue;
                 default:
                     throw new FatalError("Invalid option: " + arg);
                 }
@@ -890,7 +897,12 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
             }
 	    throw new FatalError("Invalid argument: " + arg);
         }
+
         // Run the requested action
+        var url = "https://freegeoip.app/" + api + "/" + options["server"];
+        if (options["verbose"]) {
+	    WScript.Echo("# GET " + url);
+	}
         result = GetLocation();
 
         switch (action) { // Merge the following two into a single "save" action
@@ -916,8 +928,12 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
 	    break;
         case 'save':			// Create an fso Text Stream object
 	    WScript.Echo("Writing location data to \"" + filename + "\"");
-	    var fso = new ActiveXObject("Scripting.FileSystemObject");
-	    var ts = fso.CreateTextFile(filename, true);
+	    if (!noexec) {
+	      var fso = new ActiveXObject("Scripting.FileSystemObject");
+	      var ts = fso.CreateTextFile(filename, true);
+	    } else {
+	      var ts = WScript.StdOut;
+	    }
 	    action = "list";
 	    break;
         }
