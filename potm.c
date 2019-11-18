@@ -18,16 +18,18 @@
 **   2019-01-16 JFL Added option -i to output the moon on inverse video screens.
 **   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
 **   2019-11-17 JFL Added option /? for Windows.
+**   2019-11-18 JFL Use the new include/versions.h instead of include/debugm.h.
 */
 
-#define VERSION "2019-11-17"
+#define VERSION "2019-11-18"
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "today.h"
 #include "moontx.h"
-#include "include/debugm.h"
+#include "include/versions.h"
 
 static	char	potm[64];
 

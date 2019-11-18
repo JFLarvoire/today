@@ -12,16 +12,17 @@
 **   2019-11-01 JFL Added support for dates in the ISO 8601 YYYY-DDD format.
 **   2019-11-03 JFL Added option -f to display the full date/time.
 **   2019-11-17 JFL Added option /? for Windows.
+**   2019-11-18 JFL Use the new include/versions.h instead of include/debugm.h.
 */
 
-#define VERSION "2019-11-17"
+#define VERSION "2019-11-18"
 
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
 #include "today.h"
-#include "include/debugm.h"
+#include "include/versions.h"
 
 #define streq(s1, s2) (!strcmp(s1, s2))
 
