@@ -27,6 +27,7 @@
 #		    configuration file, and a user configuration file.        #
 #    2019-11-18 JFL Fixed the configuration file name for Windows.	      #
 #                   Added option -X | --noexec for a no-execute mode.         #
+#                   Added preliminary support for web proxys.                 #
 #                                                                             #
 ###############################################################################
 
@@ -34,8 +35,6 @@
 set version "2019-11-18"
 
 set script [file tail $argv0]
-
-package require http
 
 # Remove an argument from the head of a routine argument list.
 proc PopArg {{name args}} {
@@ -693,7 +692,6 @@ while {"$args" != ""} {
 # Only enforce these requirements now. This allows getting the help, even
 # on systems that are missing the necessary packages.
 set err [catch {
-  set tlsVersion [package require tls]
   package require json
   
   # proc yes args { # Traces TLS handshake, and forces certificates validation
@@ -701,22 +699,37 @@ set err [catch {
   #   return 1
   # }
 
+  package require http
+  set tlsVersion [package require tls]
+  if $debug { puts "tls version $tlsVersion" }
   # Disable ssl3, as the ssl3 handshake fails to connect to https://freegeoip.app/
   # (Probably disabled on the server side to prevent POODLE attacks.)
-  tls::init -require false -request false -ssl2 0 -ssl3 0 ;# -command ::yes
+  # tls::init -require false -request false -ssl2 0 -ssl3 0 ;# -command ::yes
+  set apVersion [package require autoproxy]
+  if $debug { puts "autoproxy version $apVersion" }
+  autoproxy::init
   # Work around issues in tls 1.6, which lacks init option -autoservername true
   proc tls_socket args {
     # puts "tls_socket $args"
     # set opts [lrange $args 0 end-2]
     set host [lindex $args end-1]
     # set port [lindex $args end]
-    set cmd [concat ::tls::socket -servername $host $args]
-    # puts $cmd
-    eval $cmd
+    # set cmd [concat ::tls::socket -servername $host $args]
+    # set proxyHost [::autoproxy::cget -host]
+    if {"$host" == "freegeoip.app"} {
+      set ssl3 {-ssl3 0}
+    } else {
+      set ssl3 {}
+    }
+    set cmd [concat ::autoproxy::tls_socket $ssl3 -servername $host $args]
+    if $::debug { puts $cmd }
+    # eval $cmd
+    uplevel $cmd	;# ::autoproxy::tls_socket requires this instead, as it accesses variables in the upvar 1 caller's frame
   }
   
-  # http::register https 443 ::tls::socket	;# The default TLS socket
+  # http::register https 443 ::tls::socket		;# The default TLS socket
   http::register https 443 ::tls_socket		;# Our TLS socket front end
+  # http::register https 443 ::autoproxy::tls_socket	;# The autoproxy socket front end
 } errMsg]
 if {$err} {
   set pkg tls
@@ -733,8 +746,12 @@ If they're not installed, please run, for example: yum install tcllib tcltls}
 }
 
 set url "https://freegeoip.app/$api/$host"
+# set url "https://google.com"
 
 set err [catch {
+  if {$verbose || $debug} {
+    puts "# GET $url"
+  }
   set token [http::geturl $url]
 
   set reply [http::data $token]
