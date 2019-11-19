@@ -729,7 +729,8 @@ set err [catch {
 
   set reply [http::data $token]
 
-  switch $action { # Merge the following two into a single "save" action
+  # Merge the following two actions into a single "save" action
+  switch $action {
     "system" {
       if {"$::tcl_platform(platform)" == "windows"} {
 	set etc $env(windir)
@@ -751,7 +752,8 @@ set err [catch {
     }
   }
 
-  switch $action { # Merge the following two into a single "list" action
+  # Merge the following two actions into a single "list" action
+  switch $action {
     "list" {
       set hFile "stdout"
     }
