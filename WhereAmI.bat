@@ -20,7 +20,8 @@
 *                   Microsoft JScript Features:                               *
 *                   https://msdn.microsoft.com/en-us/library/4tc5a343.aspx    *
 *                   The WScript object:                                       *
-*                   https://technet.microsoft.com/en-us/library/ee156585.aspx *
+*		    https://docs.microsoft.com/en-us/previous-versions/at5ydy31(v%3dvs.80)
+*		    https://docs.microsoft.com/en-us/previous-versions/tn-archive/ee156585(v=technet.10)
 *                   Old MS JavaScript version information:                    *
 *                   https://docs.microsoft.com/en-us/scripting/javascript/reference/javascript-version-information
 *                   Modern JavaScript doc. Unfortunately, the cscript is older*
@@ -36,6 +37,7 @@
 *		    configuration file, and a user configuration file.        *
 *    2019-11-18 JFL Avoid using the eval function.			      *
 *                   Added option -X | --noexec for a no-execute mode.         *
+*                   Fix querying remote servers locations.                    *
 *                                                                             *
 \*****************************************************************************/
 
@@ -740,7 +742,7 @@ function LocationApi(api, options) {
     if (options['debug']) WScript.Echo("GET " + url);
     response = ExecRequest(url, 'GET', null, options);
 
-    if (options['debug']) WScript.Echo("# /" + api + " result: " + response);
+    if (options['debug']) WScript.Echo("# " + api + " result: " + response);
     return response;
 }
 
@@ -843,6 +845,7 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
         var action = 'list';
         var api = 'xml';
         var noexec = false;
+        var server = "";
 
         for (i=1; i < argc; i++) {
             var arg = argv[i];
@@ -891,19 +894,19 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
                 }
             }
             // Then process normal arguments
-            if (!options["server"]) {
-              options["server"] = arg;
+            if (server == "") {
+              server = arg;
               continue;
             }
 	    throw new FatalError("Invalid argument: " + arg);
         }
 
-        // Run the requested action
-        var url = "https://freegeoip.app/" + api + "/" + options["server"];
-        if (options["verbose"]) {
+        // Show the service queried
+        api = "/" + api + "/" + server;
+        if (options["verbose"] || options["debug"]) {
+	    var url = urlFreeGeoIP + api;
 	    WScript.Echo("# GET " + url);
 	}
-        result = GetLocation();
 
         switch (action) { // Merge the following two into a single "save" action
         case 'system':
@@ -940,9 +943,11 @@ Note: Uses https://freegeoip.app/. This requires a connection to the Internet.\
 
         switch (action) {
         case 'dump':
-	    WScript.Echo(LocationApi('/xml/', options));
+	    WScript.Echo(LocationApi(api, options));
 	    break;
         case 'list':
+          options["server"] = server;
+	  result = GetLocation(options);
 	  for (var v in result) {
 	    var tag = v.toUpperCase();
 	    var value = result[v];
