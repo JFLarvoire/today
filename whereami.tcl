@@ -25,11 +25,12 @@
 #    2019-11-16 JFL Added the DB of time zone names, and set TZABBR, DSTZABBR.#
 #    2019-11-17 JFL Added options -s & -u to write respectively a system      #
 #		    configuration file, and a user configuration file.        #
+#    2019-11-18 JFL Fixed the configuration file name for Windows.	      #
 #                                                                             #
 ###############################################################################
 
 # Set defaults
-set version "2019-11-17"
+set version "2019-11-18"
 
 set script [file tail $argv0]
 
@@ -733,21 +734,18 @@ set err [catch {
   switch $action {
     "system" {
       if {"$::tcl_platform(platform)" == "windows"} {
-	set etc $env(windir)
+	set filename "$env(windir)\\location.inf"
       } else {
-	set etc "/etc"
+	set filename "/etc/location.conf"
       }
-      set filename [file join $etc "location.conf"]
       set action "save"
     }
     "user" {
       if {"$::tcl_platform(platform)" == "windows"} {
-	set homevar "USERPROFILE"
+	set filename "$env(USERPROFILE)\\location.inf"
       } else {
-	set homevar "HOME"
+	set filename "$env(HOME)/.location"
       }
-      set home $env($homevar)
-      set filename [file join $home ".location"]
       set action "save"
     }
   }
