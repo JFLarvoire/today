@@ -701,7 +701,8 @@ set err [catch {
   #   return 1
   # }
 
-  # Disable ssl3, as the ssl3 hadshake fails to connect to https://freegeoip.app/
+  # Disable ssl3, as the ssl3 handshake fails to connect to https://freegeoip.app/
+  # (Probably disabled on the server side to prevent POODLE attacks.)
   tls::init -require false -request false -ssl2 0 -ssl3 0 ;# -command ::yes
   # Work around issues in tls 1.6, which lacks init option -autoservername true
   proc tls_socket args {
@@ -810,4 +811,6 @@ if $err {
     set errMsg "$errMsg."
   }
   puts stderr "$script: $errMsg"
+  exit 1
 }
+exit 0
