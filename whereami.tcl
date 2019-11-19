@@ -26,6 +26,7 @@
 #    2019-11-17 JFL Added options -s & -u to write respectively a system      #
 #		    configuration file, and a user configuration file.        #
 #    2019-11-18 JFL Fixed the configuration file name for Windows.	      #
+#                   Added option -X | --noexec for a no-execute mode.         #
 #                                                                             #
 ###############################################################################
 
@@ -636,25 +637,25 @@ if {$::tcl_platform(platform) == "windows"} {
 set action "list"
 set api "json"
 set host ""
+set debug 0
 set verbose 0
+set noExec 0
 
 # Scan all arguments.
 set args $argv
 while {"$args" != ""} {
   set arg [PopArg]
   switch -- $arg {
-    "-j" - "--json" {		# Dump the raw json data
-      set api "json"
-      set action "dump"
+    "-d" - "--debug" {		# Debug mode
+      set debug 1
     }
     "-h" - "--help" - "-?" - "/?" {	# Display a help screen and exit.
       puts $usage
       exit 0
     }
-    "-V" - "--version" {	# Display this library version
-      puts $version
-      puts [array get TZDB]
-      exit 0
+    "-j" - "--json" {		# Dump the raw json data
+      set api "json"
+      set action "dump"
     }
     "-s" - "--system" {		# Save the /etc/location.conf configuration file
       set api "json"
@@ -664,12 +665,19 @@ while {"$args" != ""} {
       set api "json"
       set action "user"
     }
-    "-v" - "--verbose" {	# Increase the verbosity level
+    "-v" - "--verbose" {	# Verbose mode
       set verbose 1
+    }
+    "-V" - "--version" {	# Display this library version
+      puts $version
+      exit 0
     }
     "-x" - "--xml" {		# Dump the raw xml data
       set api "xml"
       set action "dump"
+    }
+    "-X" - "--noexec" {		# No-exec mode
+      set noExec 1
     }
     default {
       if {"$host"==""} {		; # If the host is not set...
@@ -757,7 +765,11 @@ set err [catch {
     }
     "save" {
       puts "Writing location data to \"[file nativename $filename]\""
-      set hFile [open $filename "w"]
+      if {!$noExec} {
+	set hFile [open $filename "w"]
+      } else {
+	set hFile "stdout"
+      }
       set action "list"
     }
   }
