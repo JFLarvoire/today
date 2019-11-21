@@ -28,11 +28,12 @@
 #    2019-11-18 JFL Fixed the configuration file name for Windows.	      #
 #                   Added option -X | --noexec for a no-execute mode.         #
 #                   Added preliminary support for web proxys.                 #
+#    2019-11-21 JFL Improved the help screen.                                 #
 #                                                                             #
 ###############################################################################
 
 # Set defaults
-set version "2019-11-18"
+set version "2019-11-21"
 
 set script [file tail $argv0]
 
@@ -613,13 +614,15 @@ $script - Get the system location based on its IP address
 Usage: $script [OPTIONS] [SERVER|IP]
 
 Options:
-  -?|-h     Display this help
+  -?|-h     Display this help and exit
+  -d        Debug mode. Display internal infos about how things work
   -j        Display the freegeoip.app JSON response
   -s        Save the system location data into file $systemProfile
             (Recommended for today/sunrise/sunset. Must be running as $root.)
   -u        Save the user location data into file $userProfile
             (Alternative for today/sunrise/sunset, when not running as $root.)
-  -V        Display the script version
+  -v        Verbose mode. Display more infos about commands and results
+  -V        Display this script version and exit
   -x        Display the freegeoip.app XML response
 
 Server|IP: The DNS name or IP address of another system. Default: This system's
