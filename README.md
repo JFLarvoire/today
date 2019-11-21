@@ -2,15 +2,17 @@
 
 A set of programs for computing and displaying various ephemeris times for today.
 
-| Program      | Description                                                                |
-| ------------ | -------------------------------------------------------------------------- |
-| sunrise      | Display the sunrise time as HH:MM, or as a very detailed string            |
-| sunset       | Display the sunset time as HH:MM, or as a very detailed string             |
-| potm         | Display the Phase Of The Moon                                              |
-| today        | Display all the above in plain English                                     |
-| localtime    | Display the local time as HH:MM:SS                                         |
-| WhereAmI.bat | Get system location information based on the IP address (Windows version)  |
-| whereami.tcl | Get system location information based on the IP address (Unix version)     |
+| Program      | Description                                                                      |
+| ------------ | -------------------------------------------------------------------------------- |
+| sunrise      | Display the sunrise time as HH:MM, or as a very detailed string                  |
+| sunset       | Display the sunset time as HH:MM, or as a very detailed string                   |
+| potm         | Display the Phase Of The Moon                                                    |
+| today        | Display all the above in plain English                                           |
+| localtime    | Display the local time as HH:MM:SS                                               |
+|    <hr/>     |                                      <hr/>                                       |
+| WhereAmI.bat | Get system location information based on its IP address (Windows version)        |
+| whereami.py  | Get system location information based on its IP address (Unix + Windows version) |
+| whereami.tcl | Get system location information based on its IP address (Alternate Unix version) |
 
 All binary programs accept an optional date/time argument, formatted as described below.
 By default, they use the current date and time.
@@ -27,7 +29,7 @@ All programs and scripts have an option -? or -h to display a detailed help scre
 
 ### History
 
-The programs were written in 1985, by Keith E. Brandt, John Dilley, Robert Bond, Martin Minow.  
+The C programs were written in 1985, by Keith E. Brandt, John Dilley, Robert Bond, Martin Minow.  
 Published in 2003 (?) at http://www.linuxha.com/athome/common/today.tgz.
 
 Updated in 2009 by Neil Cherry to work better with the more intelligent C compilers of that time.  
@@ -50,9 +52,9 @@ Updated in 2019 by Jean-François Larvoire, based on the 2009 version. Changes v
 
 ### Location configuration system
 
-The initial programs had to be modified and rebuilt for use in a different location.  
-This is still possible by modifying the constants defined in params.h.
-But obviously this is very inconvenient.
+The initial C programs had to be modified and rebuilt for use in a different location.  
+This is still possible by modifying the constants now centrally defined in params.h.
+But obviously this is very inconvenient!
 
 The 2019 versions support location configuration files, and environment strings.
 The programs search for the first location information file, in the following order:
@@ -60,6 +62,8 @@ The programs search for the first location information file, in the following or
 1. In the user location file ("~/.location" for Unix, or "%USERPROFILE%\\location.inf" for Windows)
 2. In the system location file ("/etc/location.conf" for Unix, or "%windir%\\location.inf" for Windows)
 3. In the built-in constants from param.h.
+
+The location configuration files must contain variable definitions using the following formats:
 
 | Variable definition example  | Description                               |
 | ---------------------------- | ----------------------------------------- |
@@ -74,8 +78,12 @@ The programs search for the first location information file, in the following or
 
 Notes:
 
+* The variable name case does not matter
 * The = sign is optional
-* Anything beginning with # or // is a comment, and is ignored by the programs.
+* Anything beginning with # or // is a comment, and is ignored by the C programs.
+* Caution: The LONGITUDE value definition differs in location configuration files, and in params.h:
+  - In conf. files, +=east (All web services report longitudes this way now)
+  - In params.h, +=west    (For historical reasons: The sign was set like this in the original C sources)
 
 Finally, if environment variables are defined, they override the values found in the configuration files above.
 
@@ -97,15 +105,23 @@ If you don't have administration rights:
 * Run `whereami.bat` to see the location information.
 * Run `whereami.bat -u` to write that location information into "%USERPROFILE%\\location.inf".
 
+Note: The Python and Tcl scripts provided for Unix also work in Windows.
+But they do require an interpreter for their respective language, which is not installed by default.  
+For information on how to install and configure one, look there:
+[Python](https://github.com/JFLarvoire/SysToolsLib/tree/master/Python)
+[Tcl](https://github.com/JFLarvoire/SysToolsLib/tree/master/Tcl)
+
 #### Unix
 
 * Open a command shell.
-* Run `chmod +x whereami.tcl` to make sure whereami.tcl is executable.
-* Run `./whereami.tcl` to see the location information.
-* Run `sudo "$PWD/whereami.tcl" -s` to write that location information into "/etc/location.conf".
+* Run `chmod +x whereami.py` to make sure whereami.py is executable.
+* Run `./whereami.py` to see the location information.
+* Run `sudo "$PWD/whereami.py" -s` to write that location information into "/etc/location.conf".
 
 If you don't have root rights:
-* Run `./whereami.tcl -u` to write that location information into "~/.location".
+* Run `./whereami.py -u` to write that location information into "~/.location".
+
+An equivalent script written in Tcl is also available.
 
 #### Precision of the location information
 
