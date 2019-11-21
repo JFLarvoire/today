@@ -1,13 +1,15 @@
-﻿# today tools
+﻿Today date/time/location tools
+==============================
 
-A set of programs for computing and displaying various ephemeris times for today.
+
+A set of programs for computing and displaying various ephemeris times for today, or any other date.
 
 | Program      | Description                                                                      |
 | ------------ | -------------------------------------------------------------------------------- |
-| sunrise      | Display the sunrise time as HH:MM, or as a very detailed string                  |
-| sunset       | Display the sunset time as HH:MM, or as a very detailed string                   |
-| potm         | Display the Phase Of The Moon                                                    |
-| today        | Display all the above in plain English                                           |
+| sunrise      | Display the sunrise time as HH:MM, or as a detailed date/time/location string    |
+| sunset       | Display the sunset time as HH:MM, or as a detailed date/time/location string     |
+| potm         | Display the Phase Of The Moon, in English, and as ASCII art                      |
+| today        | Display all the above in English                                                 |
 | localtime    | Display the local time as HH:MM:SS                                               |
 |    <hr/>     |                                      <hr/>                                       |
 | WhereAmI.bat | Get system location information based on its IP address (Windows version)        |
@@ -25,32 +27,11 @@ By default, they use the current date and time.
 * Shortened date format: [+YY]YYMMDD[HH[MM[SS]]]
    * This is the original format supported by today, with just numbers. Prepend a '+' if specifying the century.
 
-All programs and scripts have an option -? or -h to display a detailed help screen.
+All programs and scripts have an option -h or -? (or /? in Windows) to display a detailed help screen.
 
-### History
 
-The C programs were written in 1985, by Keith E. Brandt, John Dilley, Robert Bond, Martin Minow.  
-Published in 2003 (?) at http://www.linuxha.com/athome/common/today.tgz.
-
-Updated in 2009 by Neil Cherry to work better with the more intelligent C compilers of that time.  
-The updated version was published at http://www.linuxha.com/athome/common/today-20091222.tgz
-
-As of 2019-01-20, there was an empty repository at https://github.com/linuxha/today, that was probably intended to
-contain Neil Cherry's latest version of today tools.
-
-Updated in 2019 by Jean-François Larvoire, based on the 2009 version. Changes versus that 2009 version:
-
-* Fixed all warnings reported by modern C compilers.
-* Moved all location-specific definitions to new file params.h. Default setup for Grenoble, France.
-* Added make files for DOS and Windows, from: https://github.com/JFLarvoire/SysToolsLib/tree/master/C/include
-* Added command-line parsing to all programs. Use option -? or -h to get help.
-* Added command-line options to sunrise and sunset, to add or subtract a given offset from the sunrise or sunset time.
-* The potm program now also draws the moon crescent using ASCII art.
-* Moved the date/time parsing routine from today.c to new file parsetime.c, and use it for all programs.
-* Added a localtime program, to test date/time parsing improvements, and convert GMT time to local time.
-* Added a configuration system (see below), and whereami.* scripts for automatically initializing it.
-
-### Location configuration system
+Location configuration system
+-----------------------------
 
 The initial C programs had to be modified and rebuilt for use in a different location.  
 This is still possible by modifying the constants now centrally defined in params.h.
@@ -89,12 +70,14 @@ Finally, if environment variables are defined, they override the values found in
 
 The easiest way to initialize a configuration file is to use the whereami.* script for your system.
 
-### whereami.* scripts
+
+whereami.* location scripts
+---------------------------
 
 These scripts use a web service API to get location information based on the system IP address.
 So they work only if the system is connected to the Internet.
 
-#### Windows:
+### Windows:
 
 * Open a command prompt running as Administrator
 * Run `whereami.bat` to see the location information.
@@ -105,13 +88,15 @@ If you don't have administration rights:
 * Run `whereami.bat` to see the location information.
 * Run `whereami.bat -u` to write that location information into "%USERPROFILE%\\location.inf".
 
-Note: The Python and Tcl scripts provided for Unix also work in Windows.
-But they do require an interpreter for their respective language, which is not installed by default.  
-For information on how to install and configure one, look there:
-[Python](https://github.com/JFLarvoire/SysToolsLib/tree/master/Python)
-[Tcl](https://github.com/JFLarvoire/SysToolsLib/tree/master/Tcl)
+Notes:
+* WhereAmI.bat uses Windows APIs to access the Web service. It will automatically use the Web proxy configured in Windows.
+* The Python and Tcl scripts provided for Unix also work in Windows.
+  But they do require an interpreter for their respective language, which is not installed by default.  
+  For information on how to install and configure one, look there:
+  [Python](https://github.com/JFLarvoire/SysToolsLib/tree/master/Python)		|
+  [Tcl](https://github.com/JFLarvoire/SysToolsLib/tree/master/Tcl)
 
-#### Unix
+### Unix
 
 * Open a command shell.
 * Run `chmod +x whereami.py` to make sure whereami.py is executable.
@@ -121,20 +106,23 @@ For information on how to install and configure one, look there:
 If you don't have root rights:
 * Run `./whereami.py -u` to write that location information into "~/.location".
 
-An equivalent script written in Tcl is also available.
+Notes:
+* An equivalent whereami.tcl script, written in Tcl, is also available.
+* Both scripts use the Web proxy configured in the `http_proxy` or `https_proxy` environment variables, if defined.
 
-#### Precision of the location information
+### Precision of the location information
 
 In most cases, the web service API will not report your actual location, but that of your ISP.  
-If you're running a whereami script in an intranet within a large organization, you might get the location
-of the place where your intranet is connected to the Internet... Which might be in a very distant city!  
-So on a laptop, it is recommended to run the `whereami -s` script from home rather that from work.
+If you're running a whereami script on the intranet of a large organization, you might get the location of your Web
+proxy, or that of the place where your intranet is connected to the Internet... Which might be in a very distant city!
 
+So on a laptop, it is recommended to run the `whereami -s` script from home rather that from work.
 For best precision, pinpoint your place in Google maps, then manually update the latitude, longitude, and city name
 in the configuration file generated by the whereami.* script.
 
 
-## Build procedure
+Build procedure
+---------------
 
 In all cases, first edit the params.h file, and change the geographical parameters for your location:
 
@@ -203,7 +191,34 @@ If you have both VC++ 1.52 for building DOS apps, and a recent Visual Studio ver
 the make files will build both DOS and Windows versions, and the WIN32 version will be bound with the DOS version.
 The resulting WIN32 exe files will thus run in all versions of DOS and Windows.
 
-## License
+
+History
+-------
+
+The C programs were written in 1985, by Keith E. Brandt, John Dilley, Robert Bond, Martin Minow.  
+Published in 2003 (?) at http://www.linuxha.com/athome/common/today.tgz.
+
+Updated in 2009 by Neil Cherry to work better with the more intelligent C compilers of that time.  
+The updated version was published at http://www.linuxha.com/athome/common/today-20091222.tgz
+
+As of 2019-01-20, there was an empty repository at https://github.com/linuxha/today, that was probably intended to
+contain Neil Cherry's latest version of today tools.
+
+Updated in 2019 by Jean-François Larvoire, based on the 2009 version. Changes versus that 2009 version:
+
+* Fixed all warnings reported by modern C compilers.
+* Moved all location-specific definitions to new file params.h. Default setup for Grenoble, France.
+* Added make files for DOS and Windows, from: https://github.com/JFLarvoire/SysToolsLib/tree/master/C/include
+* Added command-line parsing to all programs. Use option -? or -h to get help.
+* Added command-line options to sunrise and sunset, to add or subtract a given offset from the sunrise or sunset time.
+* The potm program now also draws the moon crescent using ASCII art.
+* Moved the date/time parsing routine from today.c to new file parsetime.c, and use it for all programs.
+* Added a localtime program, to test date/time parsing improvements, and convert GMT time to local time.
+* Added a configuration system (see below), and whereami.* scripts for automatically initializing it.
+
+
+License
+-------
 
 As far as I know, those in the root directory were published long ago without specifying a license,
 and are thus in the public domain.
