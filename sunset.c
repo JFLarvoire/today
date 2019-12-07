@@ -19,9 +19,10 @@
 **                  Added option -c to set the config file name.
 **   2019-11-17 JFL Added system & user config files, and environment variables.
 **   2019-11-18 JFL Use the new include/versions.h instead of include/debugm.h.
+**   2019-12-07 JFL Corrected the verbose output: This is sunset, not sunrise.
 */
 
-#define VERSION "2019-11-18"
+#define VERSION "2019-12-07"
 
 #include <stdio.h>
 #include <string.h>
@@ -168,7 +169,7 @@ int main(int argc, char *argv[]) {
   sunsh += nHours;
   
   if (iFull || iVerbose) {
-    if (iVerbose) printf("Sunrise in %s, on ", city);
+    if (iVerbose) printf("Sunset in %s, on ", city);
     if (!ptm) {
       time_t now;
       time(&now);			/* get system time */
