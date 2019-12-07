@@ -27,7 +27,7 @@ By default, they use the current date and time.
 * Shortened date format: [+YY]YYMMDD[HH[MM[SS]]]
    * This is the original format supported by today, with just numbers. Prepend a '+' if specifying the century.
 
-All programs and scripts have an option -h or -? (or /? in Windows) to display a detailed help screen.
+All programs and scripts have an option -h or -? (and also /? in Windows) to display a detailed help screen.
 
 
 Location configuration system
@@ -220,8 +220,9 @@ Updated in 2019 by Jean-François Larvoire, based on the 2009 version. Changes v
 License
 -------
 
-As far as I know, those in the root directory were published long ago without specifying a license,
-and are thus in the public domain.
+Most C sources in the root directory were published decades ago in paper magazines, without specifying a license.
+They are thus in the public domain.  
+I only added localtime.c, and I hereby put in in the public domain too.
 
 The files in the include subdirectory come from the [SysToolsLib](https://github.com/JFLarvoire/SysToolsLib)
 library [include files](https://github.com/JFLarvoire/SysToolsLib/tree/master/C/include),
