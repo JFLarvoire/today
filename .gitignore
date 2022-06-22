@@ -1,0 +1,12 @@
+.gitignore
+make.bat
+configure.bat
+config.*.bat
+*~
+*#
+*.0??
+*.bak
+*.log
+*.pdb
+*.lib
+bin/
