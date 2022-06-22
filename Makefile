@@ -1,5 +1,5 @@
 ##
-#	Makefile for building today tools for Unix
+#	A GNU make (gmake) Makefile for building today tools for Unix
 #
 # Authors:
 # NC  ncherry@linuxha.com
@@ -9,11 +9,25 @@
 # 2003-06-01 NC  Published at http://www.linuxha.com/common/wea_tools.html
 # 2018-12-26 JFL Output files into the bin/$(uname -s).$(uname -p)[/Debug] subdirectory.
 # 2019-01-18 JFL Use variable PROGRAMS from Files.mak, instead of ALL.
+# 2022-06-22 JFL Fixed the installation, broken on 2019-01-18.
+#		 Added a make uninstall target.
 #
 
-# Standard installation directories.
-# NOTE: This directory must exist when you start the install.
-prefix = /usr/local
+# Standard installation directory macros, based on
+# https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
+ifeq "$(prefix)" ""
+  ifeq "$(bindir)" ""
+    ifneq "$(findstring :/usr/local/bin:,:$(PATH):)" ""
+      prefix := /usr/local	# If /usr/local/bin is in the PATH, use it
+    else
+      prefix := /usr		# Else use /usr/bin
+    endif
+  else # Extract the prefix from the bindir provided
+    prefix := $(dir $(bindir))
+  endif
+endif
+# Remove the trailing / from prefix, if any
+prefix := $(patsubst %/,%,$(strip $(prefix)))
 datarootdir = $(prefix)/share
 datadir = $(datarootdir)
 exec_prefix = $(prefix)
@@ -167,7 +181,11 @@ $(XP)/sunset: $(OP)/sunset.o $(OP)/moontx.o $(OP)/sun.o $(OP)/parsetime.o
 
 .PHONY: install
 install: all
-	cd $(XP) && cp -p -f $(ALL) $(bindir)
+	cd $(XP) && install -p $(PROGRAMS) $(bindir)
+
+.PHONY: uninstall
+uninstall:
+	cd $(bindir) && rm -f $(PROGRAMS)
 
 .PHONY: clean
 clean:
