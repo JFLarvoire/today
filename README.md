@@ -144,6 +144,9 @@ The output files will be in a subdirectory named after the Unix flavor and proce
 Run `make install`.  
 This copies the executables to /usr/local/bin.
 
+Note: The Makefile uses GNU make extensions. On systems such as MacOS, that have a different make command,
+use the gmake command instead.
+
 ### For Windows with Microsoft tools
 
 You'll need Microsoft Visual C++, that comes with Microsoft Visual Studio.
