@@ -131,7 +131,7 @@
 #		    versions.						      #
 #    2019-03-18 JFL Fixed the DOS stub location, based on OUTDIR.	      #
 #    2019-11-03 JFL Removed /Zp from CFLAGS as this breaks new SDK 10 builds. #
-#    2019-11-13 JFL Added CXXFlags for C++ compilation.                       #
+#    2019-11-13 JFL Added CXXFlags for C++ compilation: Fixes builds w. Boost.#
 #		    							      #
 #      © Copyright 2016-2018 Hewlett Packard Enterprise Development LP        #
 # Licensed under the Apache 2.0 license - www.apache.org/licenses/LICENSE-2.0 #
@@ -888,8 +888,8 @@ $(REMOVE_UTF8_BOM): "$(THIS_MAKEFILE)"
 	)
 	set "PROGRAM_DESCRIPTION="
 	for /f "tokens=1,2,*" %%a in ('findstr /B /C:"#define PROGRAM_DESCRIPTION" "!PROGRAM.ver!" 2^>NUL') do set "PROGRAM_DESCRIPTION=%%~c"
-	:# If the C source contains PROGRAM property defitions, and if there's no corresponding .rc file, then create one
-	set PROGRAM_
+	:# If the C source contains PROGRAM property definitions, and if there's no corresponding .rc file, then create one
+	set PROGRAM_ 2>NUL
 	if defined PROGRAM_VERSION if defined PROGRAM_DESCRIPTION if not exist "%~n1.rc" (
 	  echo Generating %~dpn2.rc
 	  >"%~dpn2.rc" echo #include "%~dp1SysToolsLib.rc"
@@ -938,7 +938,7 @@ $(CONV_SCRIPT): "$(THIS_MAKEFILE)"	# Poor man's version of conv.exe, limited to 
 <<KEEP
 
 # Erase all output files
-clean:
+clean: NUL
     -rd /S /Q $(R)	>NUL 2>&1
     -del /Q *.pdb	>NUL 2>&1
     -del /Q *.ncb	>NUL 2>&1
@@ -947,7 +947,7 @@ clean:
     -del /Q *~		>NUL 2>&1
 
 # Help message describing the targets
-help:
+help: NUL
     type <<
 Targets:
   clean                   Erase all files in the $(R) directory
