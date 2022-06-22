@@ -22,7 +22,7 @@
 **   2019-12-07 JFL Corrected the verbose output: This is sunset, not sunrise.
 */
 
-#define VERSION "2019-12-07"
+#define VERSION "2022-06-21"
 
 #include <stdio.h>
 #include <string.h>

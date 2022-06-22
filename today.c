@@ -29,7 +29,7 @@
  *   2019-11-18 JFL Use the new include/versions.h instead of include/debugm.h.
  */
 
-#define VERSION "2019-11-18"
+#define VERSION "2022-06-21"
 
 /*)BUILD	$(PROGRAM)	= today
 		$(FILES)	= { today datetx timetx nbrtxt moontx }
