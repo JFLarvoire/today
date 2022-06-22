@@ -37,19 +37,24 @@
 *	 The GST and ALT-AZIMUTH algorithms are from Sky and Telescope,
 *	 June, 1984 by Roger W. Sinnott
 *
-*	 Author Robert Bond - Beaverton Oregon.
+*	 Author Robert Bond - Beaverton, Oregon
 *		Neil Cherry
-*		Jean-Francois Larvoire - Saint Hilaire, France
+*		Jean-Francois Larvoire - Saint Hilaire du Touvet, France
 *
 *   History:
 *    2009-12-23 NC  Changed constants to Fort Collins, Colorado.  (ajs, 850520)
 *		    Made other minor output format improvements also.
 *    2019-01-11 JFL Added optional argument pszDate to routine sun().
 *		    Include stptime.c when building with Microsoft tools.
+*    2019-01-14 JFL Moved the date/time argument parsing to new routine parsetime() in parsetime.c.
+*		    In the default case with no argument, changed localtime() to gmtime() as this is what's used everywhere else.
 *    2019-11-15 JFL Added a config file in "~/.location".
 *    2019-11-17 JFL Manage a system config file, and a user config file.
 *                   And allow overriding it with environment values.
 *    2019-11-18 JFL Fix access bug.
+*    2022-06-21 JFL Fixed a bug introduced on 2019-01-14: If we were given no date, use the local time. (As was done before)
+*		    - The local date may actually be different from the GMT date.
+*                   - This also makes sure that the DST variable is set correctly.
 */
 
 #include <stdio.h>
@@ -298,9 +303,9 @@ char *pFile;
     if (!pt) {	/* If we were given no date, use now */
 	time_t sec_1970;	/* used by time calls */
 	time(&sec_1970);	/* get system time */
-	pt = gmtime(&sec_1970);	/* get ptr to gmt time struct */
+	pt = localtime(&sec_1970);	/* get ptr to local time struct. Don't use GMT, as it might be another day there. */
     }
-    if (debug) printf("pt = {%d, %d, %d, %d, %d, %d, %d);\n", pt->tm_year, pt->tm_mon, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec, pt->tm_isdst);
+    if (debug) printf("pt = {%d, %d, %d, %d, %d, %d, %d};\n", pt->tm_year, pt->tm_mon, pt->tm_mday, pt->tm_hour, pt->tm_min, pt->tm_sec, pt->tm_isdst);
 
     th = pt->tm_hour;
     tm = pt->tm_min;
