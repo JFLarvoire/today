@@ -162,10 +162,15 @@ Important: While installing Visual Studio Community Edition, make sure to select
 - The workload "Desktop Development with C++"
 - Options "C++/CLI support" and "Standard Library modules" (In the list at the right of the installation wizard)
 
-Run `include\configure.bat`.  
+Today uses the make system from the [NMaker](https://github.com/JFLarvoire/NMaker) project as a sub-project.  
+If you've not cloned the today project recursively, run `git submodule update`.  
+This downloads NMaker files into the NMaker subdirectory.
+
+Run `NMaker\include\configure.bat`.  
 This locates the Microsoft tools installed, and generates a config.%HOSTNAME%.bat file.  
 This also adds configure.bat and make.bat proxies in the project root directory.  
 This needs to be done once before making the first build, then again only if you install other versions of Visual Studio.
+In that case, it's easier to just run the `configure.bat` proxy in the project root.
 
 Run `make.bat`.  
 This builds all today tools for both the x86 and amd64 processors, and possibly others depending on the compilers installed.  
@@ -227,6 +232,8 @@ Updated in 2019 by Jean-François Larvoire, based on the 2009 version. Changes v
 2022-06-23: Fixed a bug introduced in 2019, causing the sunrise and sunset times to be off by 1 hour in summer time.
 This only occurred in sunrise/sunset/today when they were invoked with no date argument.
 
+2023-11-21: Use the make system from [NMaker](https://github.com/JFLarvoire/NMaker) as a subproject,
+instead of the version of the same copied in 2019 from [SysToolsLib](https://github.com/JFLarvoire/SysToolsLib).
 
 License
 -------
@@ -235,10 +242,7 @@ Most C sources in the root directory were published decades ago in paper magazin
 They are thus in the public domain.  
 I only added localtime.c, and I hereby put in in the public domain too.
 
-The files in the [include](https://github.com/JFLarvoire/today/tree/master/include) subdirectory come from the
-[SysToolsLib](https://github.com/JFLarvoire/SysToolsLib) library
-[include files](https://github.com/JFLarvoire/SysToolsLib/tree/master/C/include),
-and are licensed under the Apache 2 license.
+The [NMaker](https://github.com/JFLarvoire/NMaker) subproject files are licensed under the Apache 2 license.
 
 The whereami.* scripts use time zone information extracted from Boost's [date_time_zonespec.csv](https://github.com/boostorg/date_time/blob/master/data/date_time_zonespec.csv),
 See Boost license at https://github.com/boostorg/date_time/blob/develop/LICENSE

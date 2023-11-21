@@ -18,7 +18,7 @@
 **   2019-11-16 JFL Added option -v display the place name and full date/time.
 **                  Added option -c to set the config file name.
 **   2019-11-17 JFL Added system & user config files, and environment variables.
-**   2019-11-18 JFL Use the new include/versions.h instead of include/debugm.h.
+**   2019-11-18 JFL Use the new versions.h instead of include/debugm.h.
 **   2019-12-07 JFL Corrected the verbose output: This is sunset, not sunrise.
 */
 
@@ -29,7 +29,7 @@
 #include <time.h>
 
 #include "today.h"
-#include "include/versions.h"
+#include "versions.h"
 
 #define streq(s1, s2) (!strcmp(s1, s2))
 

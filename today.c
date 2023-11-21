@@ -26,7 +26,7 @@
  *   2019-11-16 JFL Added option -v display the place name and full date/time.
  *                  Added option -c to set the config file name.
  *   2019-11-17 JFL Added system & user config files, and environment variables.
- *   2019-11-18 JFL Use the new include/versions.h instead of include/debugm.h.
+ *   2019-11-18 JFL Use the new versions.h instead of include/debugm.h.
  */
 
 #define VERSION "2022-06-21"
@@ -99,7 +99,7 @@ int	__narg	=	1;		/* No prompt if no args		*/
 #include <stdlib.h>
 
 #include "today.h"
-#include "include/versions.h"
+#include "versions.h"
 
 #include "screensize.c" /* Define the OS-specific function GetScreenColumns() */
 
