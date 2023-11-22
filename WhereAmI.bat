@@ -38,10 +38,11 @@
 *    2019-11-18 JFL Avoid using the eval function.			      *
 *                   Added option -X | --noexec for a no-execute mode.         *
 *                   Fix querying remote servers locations.                    *
+*    2023-11-22 JFL Corrected a comment.				      *
 *                                                                             *
 \*****************************************************************************/
 
-var VERSION = "2018-11-18" // Version string displayed by the -V | --version option
+var VERSION = "2023-11-22" // Version string displayed by the -V | --version option
 
 // Many functions in this module use these options by default:
 defaultOptions = {verbose:false, debug:0};
@@ -750,7 +751,7 @@ function LocationApi(api, options) {
 * @desc  Invoke the FreeGeoIP location API, and decode the result
 * @param array  options overriding script defaults. Ex: ["debug"=1]
 * @throws FatalError Message describing an XMLHttpRequest (connection) or HTTP (web server) or puload API error
-* @return The XML returned by the server, converted to a PHP array.
+* @return The XML returned by the server, converted to a JavaScript array.
 */
 function GetLocation(options) {
     options = (typeof options === 'undefined') ? defaultOptions : options;
