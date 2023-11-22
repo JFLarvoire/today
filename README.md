@@ -142,6 +142,10 @@ The original settings for Spotswood, New Jersey, and Fort Collins, Colorado, are
 
 ### For Unix
 
+Today uses include files from the [NMaker](https://github.com/JFLarvoire/NMaker) project as a sub-project.  
+If you've not cloned the today project recursively, run `git submodule update --init`.  
+This downloads NMaker files into the NMaker subdirectory.
+
 Run `make`.  
 This builds all today tools for the current version of Unix.
 The output files will be in a subdirectory named after the Unix flavor and processor name. Ex: `bin/Linux.x86_64`
@@ -163,7 +167,7 @@ Important: While installing Visual Studio Community Edition, make sure to select
 - Options "C++/CLI support" and "Standard Library modules" (In the list at the right of the installation wizard)
 
 Today uses the make system from the [NMaker](https://github.com/JFLarvoire/NMaker) project as a sub-project.  
-If you've not cloned the today project recursively, run `git submodule update`.  
+If you've not cloned the today project recursively, run `git submodule update --init`.  
 This downloads NMaker files into the NMaker subdirectory.
 
 Run `NMaker\include\configure.bat`.  

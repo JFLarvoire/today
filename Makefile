@@ -12,6 +12,7 @@
 # 2022-06-22 JFL Fixed the installation, broken on 2019-01-18.
 #		 Added a make uninstall target.
 # 2022-06-24 JFL Fixed the processor detection on a Raspberry Pi.
+# 2023-11-22 JFL Added NMaker/include to the CC include directories.
 #
 
 # Standard installation directory macros, based on
@@ -116,7 +117,7 @@ XPN = $(OSPN)
 XPD = $(OSPD)
 
 # Build options
-CFLAGS	= -O -Wall
+CFLAGS	= -O -Wall -I NMaker/include
 CLIBS	= -lm
 LDLIBS	= /usr/lib/crt1.o /usr/lib/crti.o # /lib/ld-linux.so.2 
 
