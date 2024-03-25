@@ -239,6 +239,9 @@ This only occurred in sunrise/sunset/today when they were invoked with no date a
 2023-11-21: Use the make system from [NMaker](https://github.com/JFLarvoire/NMaker) as a subproject,
 instead of the version of the same copied in 2019 from [SysToolsLib](https://github.com/JFLarvoire/SysToolsLib).
 
+2023-03-25: Fixed WhereAmI.bat, as the XML API it used is not supported by the FreeGeoIP server anymore.
+
+
 License
 -------
 
